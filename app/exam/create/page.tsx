@@ -2,89 +2,143 @@
 
 import { useState } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import DashboardLayout from "../../dashboard/layout";
-import { addExam } from "../../../lib/db";
 
-export default function CreateExamPage() {
-  const [title, setTitle] = useState("");
-  const [questions, setQuestions] = useState<string[]>([""]);
-  const [message, setMessage] = useState("");
+interface Question {
+  question: string;
+  options: string[];
+  correctAnswer: number | null;
+}
 
-  const handleAddQuestion = () => setQuestions([...questions, ""]);
+export default function CreateExamBuilder() {
+  const [questions, setQuestions] = useState<Question[]>([
+    { question: "", options: ["", "", "", ""], correctAnswer: null },
+  ]);
 
-  const handleQuestionChange = (index: number, value: string) => {
+  function addQuestion() {
+    setQuestions([
+      ...questions,
+      { question: "", options: ["", "", "", ""], correctAnswer: null },
+    ]);
+  }
+
+  function removeQuestion(index: number) {
+    if (questions.length === 1) return;
+    setQuestions(questions.filter((_, i) => i !== index));
+  }
+
+  function updateQuestionText(index: number, value: string) {
     const updated = [...questions];
-    updated[index] = value;
+    updated[index].question = value;
     setQuestions(updated);
-  };
+  }
 
-  const handleCreateExam = async (e: React.FormEvent) => {
-    e.preventDefault();
+  function updateOption(qIndex: number, optIndex: number, value: string) {
+    const updated = [...questions];
+    updated[qIndex].options[optIndex] = value;
+    setQuestions(updated);
+  }
 
-    if (!title || questions.some((q) => !q)) {
-      setMessage("Please fill in all fields");
-      return;
+  function setCorrect(qIndex: number, optIndex: number) {
+    const updated = [...questions];
+    updated[qIndex].correctAnswer = optIndex;
+    setQuestions(updated);
+  }
+
+  function submitExam() {
+    for (const q of questions) {
+      if (!q.question.trim()) {
+        alert("A question is empty!");
+        return;
+      }
+      if (q.correctAnswer === null) {
+        alert("Some questions have no correct answer selected!");
+        return;
+      }
     }
-
-    await addExam({ title, questions });
-    setMessage("Exam created successfully!");
-    setTitle("");
-    setQuestions([""]);
-  };
+    console.log("FINAL EXAM PAYLOAD:", questions);
+  }
 
   return (
-    <DashboardLayout>
-      <h2 className="text-2xl font-bold mb-4">Create Exam</h2>
-      {message && <p className="text-green-500 mb-4">{message}</p>}
+    <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
+      <h1 className="text-3xl font-bold text-gray-900">Exam Builder</h1>
 
-      <form onSubmit={handleCreateExam} className="space-y-6">
-        <div>
-          <label className="block mb-2 font-semibold">Exam Title</label>
-          <input
-            type="text"
-            className="w-full p-2 border rounded-md"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            required
-          />
-        </div>
-
-        {questions.map((q, i) => (
-          <div key={i} className="mb-4">
-            <label className="block mb-2 font-semibold">Question {i + 1}</label>
-            <Editor
-              apiKey="a577i0klhoyk4olpmachbpkazs6i4hl994d4wfv9ej4udnyj" // Optional: leave empty for free offline
-              value={q}
-              init={{
-                height: 200,
-                menubar: false,
-                plugins: ["lists link image paste help wordcount"],
-                toolbar:
-                  "undo redo | bold italic underline | bullist numlist | alignleft aligncenter alignright | link | help",
-                branding: false,
-              }}
-              onEditorChange={(content) => handleQuestionChange(i, content)}
-            />
+      {questions.map((q, index) => (
+        <div
+          key={index}
+          className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200"
+        >
+          <div className="flex justify-between items-center">
+            <h2 className="text-xl font-semibold text-gray-800">
+              Question {index + 1}
+            </h2>
+            {questions.length > 1 && (
+              <button
+                onClick={() => removeQuestion(index)}
+                className="text-red-600 hover:text-red-800 font-medium"
+              >
+                Remove
+              </button>
+            )}
           </div>
-        ))}
 
-        <div className="flex gap-4">
-          <button
-            type="button"
-            onClick={handleAddQuestion}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition"
-          >
-            Add Question
-          </button>
+          {/* QUESTION EDITOR */}
+          <Editor
+            apiKey={"a577i0klhoyk4olpmachbpkazs6i4hl994d4wfv9ej4udnyj"}
+            init={{
+              height: 250,
+              menubar: false,
+              plugins: "lists link image table code",
+              toolbar:
+                "undo redo | bold italic | alignleft aligncenter alignright | bullist numlist | code",
+              content_style:
+                "body { font-family: Inter, sans-serif; font-size: 14px; color: #111827; }",
+            }}
+            value={q.question}
+            onEditorChange={(content) => updateQuestionText(index, content)}
+          />
 
-          <button
-            type="submit"
-            className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition"
-          >
-            Create Exam
-          </button>
+          {/* OPTIONS */}
+          <div className="space-y-3">
+            <h3 className="font-semibold text-black">Options</h3>
+            {q.options.map((opt, optIndex) => (
+              <div key={optIndex} className="flex text-black items-center gap-3">
+                <input
+                  type="radio"
+                  name={`correct-${index}`}
+                  checked={q.correctAnswer === optIndex}
+                  onChange={() => setCorrect(index, optIndex)}
+                  className="accent-indigo-600 w-4 h-4"
+                />
+                <input
+                  type="text"
+                  value={opt}
+                  onChange={(e) =>
+                    updateOption(index, optIndex, e.target.value)
+                  }
+                  placeholder={`Option ${optIndex + 1}`}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                />
+              </div>
+            ))}
+          </div>
         </div>
-      </form>
-    </DashboardLayout>
+      ))}
+
+      <div className="flex flex-wrap gap-4">
+        <button
+          onClick={addQuestion}
+          className="px-5 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition"
+        >
+          + Add Another Question
+        </button>
+
+        <button
+          onClick={submitExam}
+          className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+        >
+          Save Exam
+        </button>
+      </div>
+    </div>
   );
 }
