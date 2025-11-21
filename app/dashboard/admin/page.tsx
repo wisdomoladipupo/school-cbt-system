@@ -6,6 +6,8 @@ import Modal from "@/components/ui/Modal";
 import StudentForm from "@/components/students/studentForm";
 import { Student } from "@/components/students/studentCard";
 
+  import Link from "next/link";
+
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -55,12 +57,12 @@ export default function AdminDashboardPage() {
               Register Student
             </button>
 
-            <button
-              className="px-5 py-3 bg-gray-50 text-gray-700 font-medium rounded-xl shadow hover:bg-gray-100 transition"
-              onClick={() => router.push("/dashboard/admin/users")}
-            >
-              Manage Users
-            </button>
+        
+
+  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"   onClick={() => router.push("/admin/users")}>
+    Manage Users
+  </button>
+
           </div>
         </div>
 
