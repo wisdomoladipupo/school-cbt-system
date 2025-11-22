@@ -56,7 +56,7 @@ export default function TeacherDashboardPage() {
 
             <button
               className="px-5 py-3 bg-green-50 text-green-700 font-medium rounded-xl shadow hover:bg-green-100 transition"
-              onClick={() => router.push("/exams/create")}
+              onClick={() => router.push("/exam/create")}
             >
               Create Exam
             </button>

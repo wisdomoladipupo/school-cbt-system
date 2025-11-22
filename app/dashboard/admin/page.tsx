@@ -6,15 +6,13 @@ import Modal from "@/components/ui/Modal";
 import StudentForm from "@/components/students/studentForm";
 import { Student } from "@/components/students/studentCard";
 
-  import Link from "next/link";
-
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [students, setStudents] = useState<Student[]>([]);
 
   const handleAddStudent = (student: Student) => {
-    setStudents(prev => [...prev, student]);
+    setStudents((prev) => [...prev, student]);
     setIsModalOpen(false);
   };
 
@@ -25,23 +23,31 @@ export default function AdminDashboardPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-700">Total Students</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              Total Students
+            </h3>
             <p className="text-3xl font-bold mt-2 text-gray-900">1,240</p>
           </div>
 
           <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-700">Total Teachers</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              Total Teachers
+            </h3>
             <p className="text-3xl font-bold mt-2 text-gray-900">56</p>
           </div>
 
           <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-            <h3 className="text-lg font-semibold text-gray-700">Active Exams</h3>
+            <h3 className="text-lg font-semibold text-gray-700">
+              Active Exams
+            </h3>
             <p className="text-3xl font-bold mt-2 text-gray-900">12</p>
           </div>
         </div>
 
         <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h3>
+          <h3 className="text-xl font-semibold mb-4 text-gray-800">
+            Quick Actions
+          </h3>
           <div className="flex gap-4 flex-wrap">
             <button
               className="px-5 py-3 bg-blue-50 text-blue-700 font-medium rounded-xl shadow hover:bg-blue-100 transition"
@@ -57,17 +63,19 @@ export default function AdminDashboardPage() {
               Register Student
             </button>
 
-        
-
-  <button className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"   onClick={() => router.push("/admin/users")}>
-    Manage Users
-  </button>
-
+            <button
+              onClick={() => router.push("/dashboard/admin/users")}
+              className="bg-blue-600 text-white px-4 py-2 rounded"
+            >
+              Manage Users
+            </button>
           </div>
         </div>
 
         <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-          <h3 className="text-xl font-semibold mb-4 text-gray-800">Add Student</h3>
+          <h3 className="text-xl font-semibold mb-4 text-gray-800">
+            Add Student
+          </h3>
           <StudentForm onSubmit={handleAddStudent} />
         </Modal>
       </div>
