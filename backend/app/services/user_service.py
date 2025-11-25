@@ -29,3 +29,29 @@ def get_user_by_email(db: Session, email: str):
 
 def get_user(db: Session, user_id: int):
     return db.query(User).filter(User.id == user_id).first()
+
+def update_user(db: Session, user_id: int, **kwargs):
+    user = get_user(db, user_id)
+    if not user:
+        return None
+    # allowed fields: full_name, password (hashed), role, student_class
+    if 'full_name' in kwargs and kwargs['full_name'] is not None:
+        user.full_name = kwargs['full_name']
+    if 'password' in kwargs and kwargs['password']:
+        user.hashed_password = hash_password(kwargs['password'])
+    if 'role' in kwargs and kwargs['role'] is not None:
+        user.role = kwargs['role']
+    if 'student_class' in kwargs:
+        user.student_class = kwargs['student_class']
+    db.add(user)
+    db.commit()
+    db.refresh(user)
+    return user
+
+def delete_user(db: Session, user_id: int):
+    user = get_user(db, user_id)
+    if not user:
+        return False
+    db.delete(user)
+    db.commit()
+    return True

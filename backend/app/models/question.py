@@ -12,6 +12,7 @@ class Question(Base):
     # correct_answer stores the index or value to compare (we'll use index)
     correct_answer = Column(Integer, nullable=False)
     marks = Column(Integer, default=1)
+    image_url = Column(String, nullable=True)  # URL or path to question image
     created_by = Column(Integer, ForeignKey("users.id"))
 
     exam = relationship("Exam", backref="questions")

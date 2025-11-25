@@ -3,8 +3,24 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { getUser } from "../../../lib/db"; // now exists
-import { getCurrentUser } from "../../../lib/session";
+import { authAPI, setStoredAuth, getStoredUser } from "../../../lib/api";
+
+// Helper to decode JWT
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    return null;
+  }
+};
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -14,7 +30,7 @@ export default function LoginPage() {
   const router = useRouter();
 
   useEffect(() => {
-    const user = getCurrentUser();
+    const user = getStoredUser();
     if (user) {
       if (user.role === "admin") router.push("/dashboard/admin");
       else if (user.role === "teacher") router.push("/dashboard/teacher");
@@ -24,16 +40,28 @@ export default function LoginPage() {
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const user = await getUser(email, password);
-    if (!user) {
-      setError("Invalid email or password");
-      return;
-    }
-    localStorage.setItem("currentUser", JSON.stringify(user));
+    setError("");
 
-    if (user.role === "admin") router.push("/dashboard/admin");
-    else if (user.role === "teacher") router.push("/dashboard/teacher");
-    else router.push("/dashboard/student");
+    try {
+      const response = await authAPI.login({ email, password });
+      
+      // Decode JWT to get user info including role
+      const decoded = decodeJWT(response.access_token);
+      const userPayload = {
+        id: decoded?.user_id || 0,
+        full_name: email.split("@")[0],
+        email,
+        role: decoded?.role || "student",
+      };
+      
+      setStoredAuth(response.access_token, userPayload);
+
+      if (userPayload.role === "admin") router.push("/dashboard/admin");
+      else if (userPayload.role === "teacher") router.push("/dashboard/teacher");
+      else router.push("/dashboard/student");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed");
+    }
   };
 
 

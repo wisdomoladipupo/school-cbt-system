@@ -1,6 +1,5 @@
 "use client";
 
-import DashboardLayout from "../layout";
 import { getCurrentUser } from "@/lib/session";
 
 interface Exam {
@@ -18,12 +17,8 @@ interface Student {
   email: string;
 }
 
-// Example all exams (could later be fetched in a server action or passed as props)
-const ALL_EXAMS: Exam[] = [
-  { id: 1, title: "Math Quiz", className: "JSS1", duration: 30 },
-  { id: 2, title: "English Test", className: "JSS2", duration: 45 },
-  { id: 3, title: "Science Exam", className: "JSS1", duration: 60 },
-];
+// Exams will be fetched from API
+const ALL_EXAMS: Exam[] = [];
 
 export default function StudentDashboardPage() {
   const student = getCurrentUser() as Student | null;
@@ -36,9 +31,8 @@ export default function StudentDashboardPage() {
   );
 
   return (
-    <DashboardLayout userRole="student">
-      <div className="space-y-8">
-        {/* Student Profile */}
+    <div className="space-y-8">
+      {/* Student Profile */}
         <div className="flex items-center gap-6 bg-white border border-gray-200 rounded-xl shadow p-6">
           {student.passport ? (
             <img
@@ -79,6 +73,5 @@ export default function StudentDashboardPage() {
           )}
         </div>
       </div>
-    </DashboardLayout>
-  );
+    );
 }

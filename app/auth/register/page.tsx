@@ -3,7 +3,24 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { addUser } from "../../../lib/db";
+import { authAPI, setStoredAuth } from "../../../lib/api";
+
+// Helper to decode JWT
+const decodeJWT = (token: string) => {
+  try {
+    const base64Url = token.split(".")[1];
+    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
+    const jsonPayload = decodeURIComponent(
+      atob(base64)
+        .split("")
+        .map((c) => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2))
+        .join("")
+    );
+    return JSON.parse(jsonPayload);
+  } catch (error) {
+    return null;
+  }
+};
 
 export default function RegisterPage() {
   const [name, setName] = useState("");
@@ -24,18 +41,32 @@ export default function RegisterPage() {
       return;
     }
 
-    const success = await addUser({ name, email, password, role });
-    if (!success) {
-      setError("User with this email already exists");
-      return;
+    try {
+      const response = await authAPI.register({
+        full_name: name,
+        email,
+        password,
+        role,
+      });
+
+      // Decode JWT to get user info
+      const decoded = decodeJWT(response.access_token);
+      const userPayload = {
+        id: decoded?.user_id || 0,
+        full_name: name,
+        email,
+        role: decoded?.role || role,
+      };
+
+      setStoredAuth(response.access_token, userPayload);
+
+      // Redirect based on role
+      if (role === "admin") router.push("/dashboard/admin");
+      else if (role === "teacher") router.push("/dashboard/teacher");
+      else router.push("/dashboard/student");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Registration failed");
     }
-
-    localStorage.setItem("currentUser", JSON.stringify({ name, email, role }));
-
-    // Redirect based on role
-    if (role === "admin") router.push("/dashboard/admin");
-    else if (role === "teacher") router.push("/dashboard/teacher");
-    else router.push("/dashboard/student");
   };
 
   return (

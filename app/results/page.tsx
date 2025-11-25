@@ -2,9 +2,9 @@
 
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../dashboard/layout";
-import { getResultsByStudent, getAllExams } from "../../lib/db";
+import { resultsAPI, examsAPI, getStoredToken } from "../../lib/api";
 
-import type { Exam, Result, User } from "../types/cbt";
+import type { Exam, Result } from "../types/cbt";
 
 export default function ResultsPage() {
   const [results, setResults] = useState<Result[]>([]);
@@ -12,52 +12,45 @@ export default function ResultsPage() {
 
  useEffect(() => {
   const load = async () => {
-    let currentUser: User | null = null;
-
     try {
-      const raw = localStorage.getItem("currentUser");
-      currentUser = raw ? JSON.parse(raw) : null;
-    } catch (e) {
-      console.error("Error parsing currentUser from localStorage", e);
-    }
+      const token = getStoredToken();
+      if (!token) return;
 
-    if (!currentUser?.email) return;
+      // Fetch student results from API
+      const studentResults = await resultsAPI.getMyResults(token);
 
-    // Fetch student results from DB
-    const dbResults = await getResultsByStudent(currentUser.email);
+      // Map API results to frontend Result type
+      const mappedResults: Result[] = studentResults.map((r) => ({
+        id: r.id,
+        examId: r.exam_id,
+        studentEmail: "",
+        answers: r.answers as unknown as string[],
+        score: r.score,
+        max: r.max_score,
+        duration: 0,
+        finishedAt: Date.now(),
+      }));
 
-    // Map DB results to frontend Result type safely
-    const mappedResults: Result[] = (dbResults || []).map(r => ({
-      id: r.id ?? 0,
-      examId: r.examId ?? 0,
-      studentEmail: r.studentEmail ?? "",
-      answers: r.answers ?? [],
-      score: r.score ?? 0,
-      max: r.max ?? 0,
-      duration: r.duration ?? 0,
-      startedAt: r.startedAt ?? undefined, // optional in frontend type
-      finishedAt: r.finishedAt ?? Date.now(),
-    }));
+      setResults(mappedResults);
 
-    setResults(mappedResults);
+      // Fetch all exams from API
+      const allExams = await examsAPI.list();
 
-    // Fetch all exams from DB
-    const allExams = await getAllExams();
-
-    // Map exams safely by ID
-    const map: Record<number, Exam> = {};
-    allExams.forEach(e => {
-      if (e.id != null) {
+      // Map exams safely by ID
+      const map: Record<number, Exam> = {};
+      allExams.forEach((e) => {
         map[e.id] = {
           id: e.id,
-          title: e.title ?? "Untitled Exam",
-          duration: e.duration ?? 30, // default duration 30 mins
-          questions: e.questions ?? [], // ensure array exists
+          title: e.title,
+          duration: e.duration_minutes,
+          questions: [],
         };
-      }
-    });
+      });
 
-    setExamsMap(map);
+      setExamsMap(map);
+    } catch (error) {
+      console.error("Failed to load results:", error);
+    }
   };
 
   load();

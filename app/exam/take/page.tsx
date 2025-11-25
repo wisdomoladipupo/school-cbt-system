@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "../../dashboard/layout";
-import { getExamById, addResult } from "../../../lib/db";
+import { examsAPI, questionsAPI, resultsAPI, getStoredToken } from "../../../lib/api";
 import Timer, { TimerHandle } from "../../../components/cbt/Timer";
 import QuestionCard from "../../../components/cbt/QuestionCard";
 
@@ -51,27 +51,31 @@ export default function TakeExamPage() {
 
   const timerRef = useRef<TimerHandle>(null!);
 
-  // Load exam from DB and map types
+  // Load exam from API
   useEffect(() => {
     if (!examId) return;
 
     const loadExam = async () => {
-      const dbExam = await getExamById(examId);
-      if (!dbExam) return;
+      try {
+        const exam = await examsAPI.getById(examId);
+        const questions = await questionsAPI.getForExam(examId);
 
-  const mapped: Exam = {
-  id: dbExam.id ?? 0, // <- ensures it's always a number
-  title: dbExam.title,
-  duration: dbExam.duration ?? 30,
-  questions: dbExam.questions.map(q => ({
-    question: q.question,
-    options: q.options, // see next error
-    correctAnswer: q.correctAnswer,
-  })),
-};
+        const mapped: Exam = {
+          id: exam.id,
+          title: exam.title,
+          duration: exam.duration_minutes,
+          questions: questions.map((q) => ({
+            question: q.text,
+            options: q.options,
+            correctAnswer: undefined,
+          })),
+        };
 
-      setExam(mapped);
-      setAnswers(Array(mapped.questions.length).fill(null));
+        setExam(mapped);
+        setAnswers(Array(mapped.questions.length).fill(null));
+      } catch (error) {
+        console.error("Failed to load exam:", error);
+      }
     };
 
     loadExam();
@@ -114,29 +118,26 @@ export default function TakeExamPage() {
   const handleSubmit = async () => {
     if (!exam) return;
 
-    const finishedAt = Date.now();
-    const duration = startedAt ? Math.round((finishedAt - startedAt) / 1000) : 0;
-    const { score, max } = computeScore();
-
-    let currentUser: User | null = null;
     try {
-      const raw = localStorage.getItem("currentUser");
-      currentUser = raw ? JSON.parse(raw) : null;
-    } catch (e) {}
+      const token = getStoredToken();
+      if (!token) {
+        throw new Error("Not authenticated");
+      }
 
-    const payload: Result = {
-      examId,
-      studentEmail: currentUser?.email || "unknown",
-      answers: answers.map(a => (a == null ? "" : String(a))),
-      score,
-      max,
-      duration,
-      finishedAt,
-      ...(startedAt !== null ? { startedAt } : {}),
-    };
+      const payload = {
+        exam_id: examId,
+        answers: exam.questions.map((_, i) => ({
+          question_id: i,
+          answer_index: answers[i] === null ? -1 : Number(answers[i]),
+        })),
+      };
 
-    await addResult(payload);
-    setSubmitted(true);
+      await resultsAPI.submit(payload, token);
+      setSubmitted(true);
+    } catch (error) {
+      console.error("Failed to submit exam:", error);
+      alert("Failed to submit exam. Please try again.");
+    }
   };
 
   const handleStart = () => {

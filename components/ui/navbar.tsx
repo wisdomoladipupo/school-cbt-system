@@ -2,11 +2,11 @@
 
 import React from "react";
 import Link from "next/link";
-import { getCurrentUser, logout } from "@/lib/session";
+import { getStoredUser, clearStoredAuth } from "@/lib/api";
 
 export default function Navbar() {
   // Direct synchronous read – no state needed
-  const user = getCurrentUser();  
+  const user = getStoredUser();  
 
   return (
     <nav className="w-full bg-white shadow-md px-6 py-4 flex justify-between items-center">
@@ -16,7 +16,7 @@ export default function Navbar() {
         
         {user && (
           <div className="text-gray-700 capitalize">
-            {user.name} ({user.role})
+            {user.full_name} ({user.role})
           </div>
         )}
 
@@ -30,7 +30,7 @@ export default function Navbar() {
         {user && (
           <button
             onClick={() => {
-              logout();
+              clearStoredAuth();
               window.location.href = "/auth/login";
             }}
             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"

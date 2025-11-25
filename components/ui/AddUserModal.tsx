@@ -2,11 +2,14 @@
 "use client";
 
 import React, { useState } from "react";
-import { User, UserRole } from "@/app/dashboard/admin/users/page";
+import { usersAPI, getStoredToken } from "@/lib/api";
+
+type UserRole = "student" | "teacher";
 
 interface AddUserModalProps {
   onClose: () => void;
-  onSave: (user: User) => void;
+  onSave: (user: { id: string; name: string; role: UserRole; regNumber?: string; passport?: string }) => void;
+  onError?: (error: string) => void;
 }
 
 const generateRegNumber = (): string => {
@@ -15,10 +18,14 @@ const generateRegNumber = (): string => {
   return `NG/GRA/${randomDigits}${randomLetters}`;
 };
 
-export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
+export default function AddUserModal({ onClose, onSave, onError }: AddUserModalProps) {
   const [role, setRole] = useState<UserRole>("student");
   const [name, setName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
+  const [password, setPassword] = useState<string>("");
   const [passport, setPassport] = useState<string | undefined>(undefined);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string>("");
 
   function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -32,19 +39,60 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
 
   function handleSave() {
     if (!name.trim()) {
-      alert("Please enter a name.");
+      setError("Please enter a name.");
       return;
     }
 
-    const newUser: User = {
-      id: crypto.randomUUID(),
-      name: name.trim(),
-      role,
-      passport,
-      regNumber: role === "student" ? generateRegNumber() : undefined,
+    if (!email.trim()) {
+      setError("Please enter an email.");
+      return;
+    }
+
+    if (!password.trim()) {
+      setError("Please enter a password.");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    const saveUser = async () => {
+      try {
+        const token = getStoredToken();
+        if (!token) {
+          throw new Error("Not authenticated. Please login first.");
+        }
+
+        const newUserData = await usersAPI.create(
+          {
+            full_name: name.trim(),
+            email: email.trim(),
+            password,
+            role,
+            student_class: role === "teacher" ? undefined : "General",
+          },
+          token
+        );
+
+        onSave({
+          id: String(newUserData.id),
+          name: newUserData.full_name,
+          role,
+          regNumber: newUserData.registration_number,
+          passport,
+        });
+
+        onClose();
+      } catch (err) {
+        const errorMsg = err instanceof Error ? err.message : "Failed to create user";
+        setError(errorMsg);
+        onError?.(errorMsg);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    onSave(newUser);
+    saveUser();
   }
 
   return (
@@ -53,6 +101,12 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
 
       <div className="relative bg-white rounded-xl p-6 w-full max-w-md shadow-xl z-10 space-y-4">
         <h2 className="text-xl font-bold">Add New User</h2>
+
+        {error && (
+          <div className="p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg text-sm">
+            {error}
+          </div>
+        )}
 
         <div>
           <label className="block font-medium mb-1">Role</label>
@@ -81,7 +135,7 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
           <div>
             <label className="block font-medium mb-1">Registration Number</label>
             <input
-              value={generateRegNumber()} // show example; it's readonly for consistency
+              value={generateRegNumber()}
               readOnly
               className="border rounded-lg px-3 py-2 w-full bg-gray-100"
             />
@@ -92,18 +146,18 @@ export default function AddUserModal({ onClose, onSave }: AddUserModalProps) {
         )}
 
         <div>
-          <label className="block font-medium mb-1">Passport</label>
+          <label className="block font-medium mb-1">Passport Photo</label>
           <input type="file" accept="image/*" onChange={handleFileUpload} />
           {passport && (
-            <img src={passport} alt="passport" className="w-20 h-20 object-cover mt-3 rounded border" />
+            <img src={passport} alt="passport preview" className="w-20 h-20 object-cover mt-3 rounded border" />
           )}
         </div>
 
-        <div className="flex justify-end gap-3 mt-4">
+        <div className="flex justify-end gap-3 mt-6">
           <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
             Cancel
           </button>
-          <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-primary-600 text-white hover:bg-primary-700">
+          <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
             Save User
           </button>
         </div>
