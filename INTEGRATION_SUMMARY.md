@@ -5,23 +5,27 @@
 ### ✅ Completed Integration
 
 1. **API Client Layer** (`lib/api.ts`)
+
    - Centralized API endpoints
    - TypeScript interfaces for all requests/responses
    - Built-in error handling
    - Session management utilities
 
 2. **Authentication**
+
    - Login page → `authAPI.login()`
    - Register page → `authAPI.register()`
    - Navbar logout → `clearStoredAuth()`
    - Token storage in localStorage
 
 3. **User Management**
+
    - AddUserModal → `usersAPI.create()`
    - Email & password required
    - Auto-generate registration numbers for students
 
 4. **Exam Management**
+
    - Exam taking → `examsAPI.getById()` + `questionsAPI.getForExam()`
    - Result submission → `resultsAPI.submit()`
    - Timer and progress tracking
@@ -41,17 +45,20 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### 2. Start Backend
+
 ```bash
 cd backend
 python -m uvicorn app.main:app --reload
 ```
 
 ### 3. Start Frontend
+
 ```bash
 npm run dev
 ```
 
 ### 4. Test Flow
+
 1. Register → `/auth/register`
 2. Login → `/auth/login`
 3. Dashboard → Role-based redirect
@@ -60,15 +67,15 @@ npm run dev
 
 ## API Calls Summary
 
-| Page | Function | API Call |
-|------|----------|----------|
-| Login | handleLogin | `authAPI.login()` |
-| Register | handleRegister | `authAPI.register()` |
-| Navbar | handleLogout | `clearStoredAuth()` |
-| AddUserModal | handleSave | `usersAPI.create()` |
-| Take Exam (Load) | useEffect | `examsAPI.getById()` + `questionsAPI.getForExam()` |
-| Take Exam (Submit) | handleSubmit | `resultsAPI.submit()` |
-| Results | useEffect | `resultsAPI.getMyResults()` + `examsAPI.list()` |
+| Page               | Function       | API Call                                           |
+| ------------------ | -------------- | -------------------------------------------------- |
+| Login              | handleLogin    | `authAPI.login()`                                  |
+| Register           | handleRegister | `authAPI.register()`                               |
+| Navbar             | handleLogout   | `clearStoredAuth()`                                |
+| AddUserModal       | handleSave     | `usersAPI.create()`                                |
+| Take Exam (Load)   | useEffect      | `examsAPI.getById()` + `questionsAPI.getForExam()` |
+| Take Exam (Submit) | handleSubmit   | `resultsAPI.submit()`                              |
+| Results            | useEffect      | `resultsAPI.getMyResults()` + `examsAPI.list()`    |
 
 ## Token Storage
 
@@ -89,11 +96,12 @@ clearStoredAuth(); // → removes from localStorage
 ## Common Patterns
 
 ### Protected API Call with Error Handling
+
 ```typescript
 try {
   const token = getStoredToken();
   if (!token) throw new Error("Not authenticated");
-  
+
   const result = await resultsAPI.submit(payload, token);
   // Handle success
 } catch (error) {
@@ -103,6 +111,7 @@ try {
 ```
 
 ### Fetch Data on Mount
+
 ```typescript
 useEffect(() => {
   const load = async () => {
@@ -113,7 +122,7 @@ useEffect(() => {
       console.error("Failed to load:", error);
     }
   };
-  
+
   load();
 }, []);
 ```
@@ -140,16 +149,19 @@ useEffect(() => {
 ## Troubleshooting
 
 ### "401 Unauthorized" on Protected Routes
+
 - Token may have expired
 - Try logging in again
 - Check localStorage has `access_token`
 
 ### CORS Errors
+
 - Backend CORS not configured properly
 - Check backend allows your frontend URL
 - Verify `NEXT_PUBLIC_API_URL` is correct
 
 ### "Cannot find module" Errors
+
 - Run `npm install` if dependencies missing
 - Check file paths are correct
 - TypeScript errors usually resolve after saving

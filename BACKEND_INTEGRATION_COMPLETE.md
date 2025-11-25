@@ -7,32 +7,37 @@ Your School CBT System frontend has been successfully integrated with the FastAP
 ## ✅ What's Done
 
 ### 1. **API Client Layer** (`lib/api.ts`)
+
 - Created a centralized, TypeScript-safe API client
 - All endpoints organized in logical groups (auth, users, exams, questions, results)
 - Built-in error handling with descriptive messages
 - Session management utilities for token and user storage
 
 ### 2. **Authentication Integration**
-| Page | Integration |
-|------|-------------|
-| Login | `authAPI.login()` with token storage |
-| Register | `authAPI.register()` with auto-redirect |
-| Navbar | `clearStoredAuth()` for logout |
-| Dashboard | `getStoredUser()` for session check |
+
+| Page      | Integration                             |
+| --------- | --------------------------------------- |
+| Login     | `authAPI.login()` with token storage    |
+| Register  | `authAPI.register()` with auto-redirect |
+| Navbar    | `clearStoredAuth()` for logout          |
+| Dashboard | `getStoredUser()` for session check     |
 
 ### 3. **User Management**
+
 - Admin can create users via `AddUserModal`
 - Uses `usersAPI.create()` with authentication
 - Auto-generates registration numbers for students
 - Email validation and error handling
 
 ### 4. **Exam Management**
+
 - Fetch exams: `examsAPI.getById()`, `examsAPI.list()`
 - Fetch questions: `questionsAPI.getForExam()`
 - Submit results: `resultsAPI.submit()`
 - Includes timer and question navigation
 
 ### 5. **Results & History**
+
 - View student results: `resultsAPI.getMyResults()`
 - Score tracking and submission history
 - Exam title and duration display
@@ -69,6 +74,7 @@ Your School CBT System frontend has been successfully integrated with the FastAP
 ## 🚀 Getting Started
 
 ### Step 1: Environment Setup
+
 ```bash
 # Copy environment template
 cp .env.local.example .env.local
@@ -78,6 +84,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### Step 2: Start Backend
+
 ```bash
 cd backend
 python -m uvicorn app.main:app --reload
@@ -85,12 +92,14 @@ python -m uvicorn app.main:app --reload
 ```
 
 ### Step 3: Start Frontend
+
 ```bash
 npm run dev
 # Runs on http://localhost:3000
 ```
 
 ### Step 4: Test the Flow
+
 1. Visit `http://localhost:3000/auth/register`
 2. Create an account
 3. Login with your credentials
@@ -100,13 +109,17 @@ npm run dev
 ## 🔑 Key API Functions
 
 ### Authentication
+
 ```typescript
 // Login
 const { access_token } = await authAPI.login({ email, password });
 
 // Register
-const { access_token } = await authAPI.register({ 
-  full_name, email, password, role 
+const { access_token } = await authAPI.register({
+  full_name,
+  email,
+  password,
+  role,
 });
 
 // Store/Retrieve
@@ -116,6 +129,7 @@ const user = getStoredUser();
 ```
 
 ### Protected Endpoints (Require Token)
+
 ```typescript
 // Create user (admin)
 await usersAPI.create(payload, token);
@@ -131,6 +145,7 @@ await resultsAPI.getMyResults(token);
 ```
 
 ### Public Endpoints
+
 ```typescript
 // List exams
 await examsAPI.list();
@@ -171,22 +186,28 @@ Frontend State Update
 ## 🐛 Troubleshooting
 
 ### Issue: "401 Unauthorized" on protected routes
+
 **Solution:** Token expired or missing. Login again.
 
 ### Issue: CORS errors
+
 **Solution:** Ensure backend has CORS configured:
+
 ```python
 from fastapi.middleware.cors import CORSMiddleware
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:3000"], ...)
 ```
 
 ### Issue: Cannot connect to backend
-**Solution:** 
+
+**Solution:**
+
 1. Verify backend is running on `localhost:8000`
 2. Check `NEXT_PUBLIC_API_URL` in `.env.local`
 3. Check network tab in browser DevTools
 
 ### Issue: TypeScript errors in IDE
+
 **Solution:** Restart TypeScript server or reload window (Cmd+Shift+P → Reload Window)
 
 ## 📚 Documentation Files
@@ -239,16 +260,16 @@ A: Currently requires backend connection. See service-worker setup for offline s
 
 ```typescript
 // In a React component
-import { authAPI, setStoredAuth, getStoredToken } from '@/lib/api';
+import { authAPI, setStoredAuth, getStoredToken } from "@/lib/api";
 
 async function handleLogin(email: string, password: string) {
   try {
     const response = await authAPI.login({ email, password });
     const userInfo = await fetchUserInfo(response.access_token);
     setStoredAuth(response.access_token, userInfo);
-    router.push('/dashboard');
+    router.push("/dashboard");
   } catch (error) {
-    console.error('Login failed:', error.message);
+    console.error("Login failed:", error.message);
   }
 }
 ```

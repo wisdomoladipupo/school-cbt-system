@@ -8,17 +8,30 @@ type UserRole = "student" | "teacher";
 
 interface AddUserModalProps {
   onClose: () => void;
-  onSave: (user: { id: string; name: string; role: UserRole; regNumber?: string; passport?: string }) => void;
+  onSave: (user: {
+    id: string;
+    name: string;
+    role: UserRole;
+    regNumber?: string;
+    passport?: string;
+  }) => void;
   onError?: (error: string) => void;
 }
 
 const generateRegNumber = (): string => {
   const randomDigits = Math.floor(1000 + Math.random() * 9000);
-  const randomLetters = Math.random().toString(36).substring(2, 4).toUpperCase();
+  const randomLetters = Math.random()
+    .toString(36)
+    .substring(2, 4)
+    .toUpperCase();
   return `NG/GRA/${randomDigits}${randomLetters}`;
 };
 
-export default function AddUserModal({ onClose, onSave, onError }: AddUserModalProps) {
+export default function AddUserModal({
+  onClose,
+  onSave,
+  onError,
+}: AddUserModalProps) {
   const [role, setRole] = useState<UserRole>("student");
   const [name, setName] = useState<string>("");
   const [email, setEmail] = useState<string>("");
@@ -84,7 +97,8 @@ export default function AddUserModal({ onClose, onSave, onError }: AddUserModalP
 
         onClose();
       } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : "Failed to create user";
+        const errorMsg =
+          err instanceof Error ? err.message : "Failed to create user";
         setError(errorMsg);
         onError?.(errorMsg);
       } finally {
@@ -133,7 +147,9 @@ export default function AddUserModal({ onClose, onSave, onError }: AddUserModalP
 
         {role === "student" && (
           <div>
-            <label className="block font-medium mb-1">Registration Number</label>
+            <label className="block font-medium mb-1">
+              Registration Number
+            </label>
             <input
               value={generateRegNumber()}
               readOnly
@@ -149,15 +165,25 @@ export default function AddUserModal({ onClose, onSave, onError }: AddUserModalP
           <label className="block font-medium mb-1">Passport Photo</label>
           <input type="file" accept="image/*" onChange={handleFileUpload} />
           {passport && (
-            <img src={passport} alt="passport preview" className="w-20 h-20 object-cover mt-3 rounded border" />
+            <img
+              src={passport}
+              alt="passport preview"
+              className="w-20 h-20 object-cover mt-3 rounded border"
+            />
           )}
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <button onClick={onClose} className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 rounded-lg bg-gray-200 hover:bg-gray-300"
+          >
             Cancel
           </button>
-          <button onClick={handleSave} className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700">
+          <button
+            onClick={handleSave}
+            className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          >
             Save User
           </button>
         </div>

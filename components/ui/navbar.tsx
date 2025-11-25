@@ -6,24 +6,20 @@ import { getStoredUser, clearStoredAuth } from "@/lib/api";
 
 export default function Navbar() {
   // Direct synchronous read – no state needed
-  const user = getStoredUser();  
+  const user = getStoredUser();
 
   return (
     <nav className="w-full bg-white shadow-md px-6 py-4 flex justify-between items-center">
       <h1 className="text-2xl font-bold text-blue-600">School CBT System</h1>
 
       <div className="flex items-center gap-6">
-        
         {user && (
           <div className="text-gray-700 capitalize">
             {user.full_name} ({user.role})
           </div>
         )}
 
-        <Link
-          href="/dashboard"
-          className="text-gray-700 hover:text-blue-600"
-        >
+        <Link href="/dashboard" className="text-gray-700 hover:text-blue-600">
           Dashboard
         </Link>
 

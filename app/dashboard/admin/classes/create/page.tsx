@@ -6,21 +6,138 @@ import { classesAPI, getStoredToken, type SchoolLevel } from "@/lib/api";
 
 // School subjects mapping for display
 const SCHOOL_SUBJECTS: Record<string, string[]> = {
-  "NUR1": ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  "NUR2": ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  "NUR3": ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  "PRY1": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "PRY2": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "PRY3": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "PRY4": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "PRY5": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "PRY6": ["English Language", "Mathematics", "Science", "Social Studies", "Physical Education", "Music", "Art and Craft"],
-  "JSS1": ["English Language", "Mathematics", "Integrated Science", "Social Studies", "Civic Education", "Computer Science", "Physical Education", "Music", "Visual Arts"],
-  "JSS2": ["English Language", "Mathematics", "Integrated Science", "Social Studies", "Civic Education", "Computer Science", "Physical Education", "Music", "Visual Arts"],
-  "JSS3": ["English Language", "Mathematics", "Integrated Science", "Social Studies", "Civic Education", "Computer Science", "Physical Education", "Music", "Visual Arts"],
-  "SS1": ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "History", "Government", "Economics", "Literature in English", "Computer Science", "Physical Education", "Technical Drawing"],
-  "SS2": ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "History", "Government", "Economics", "Literature in English", "Computer Science", "Physical Education", "Technical Drawing"],
-  "SS3": ["English Language", "Mathematics", "Physics", "Chemistry", "Biology", "History", "Government", "Economics", "Literature in English", "Computer Science", "Physical Education", "Technical Drawing"],
+  NUR1: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
+  NUR2: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
+  NUR3: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
+  PRY1: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  PRY2: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  PRY3: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  PRY4: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  PRY5: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  PRY6: [
+    "English Language",
+    "Mathematics",
+    "Science",
+    "Social Studies",
+    "Physical Education",
+    "Music",
+    "Art and Craft",
+  ],
+  JSS1: [
+    "English Language",
+    "Mathematics",
+    "Integrated Science",
+    "Social Studies",
+    "Civic Education",
+    "Computer Science",
+    "Physical Education",
+    "Music",
+    "Visual Arts",
+  ],
+  JSS2: [
+    "English Language",
+    "Mathematics",
+    "Integrated Science",
+    "Social Studies",
+    "Civic Education",
+    "Computer Science",
+    "Physical Education",
+    "Music",
+    "Visual Arts",
+  ],
+  JSS3: [
+    "English Language",
+    "Mathematics",
+    "Integrated Science",
+    "Social Studies",
+    "Civic Education",
+    "Computer Science",
+    "Physical Education",
+    "Music",
+    "Visual Arts",
+  ],
+  SS1: [
+    "English Language",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "History",
+    "Government",
+    "Economics",
+    "Literature in English",
+    "Computer Science",
+    "Physical Education",
+    "Technical Drawing",
+  ],
+  SS2: [
+    "English Language",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "History",
+    "Government",
+    "Economics",
+    "Literature in English",
+    "Computer Science",
+    "Physical Education",
+    "Technical Drawing",
+  ],
+  SS3: [
+    "English Language",
+    "Mathematics",
+    "Physics",
+    "Chemistry",
+    "Biology",
+    "History",
+    "Government",
+    "Economics",
+    "Literature in English",
+    "Computer Science",
+    "Physical Education",
+    "Technical Drawing",
+  ],
 };
 
 export default function CreateClassPage() {
@@ -33,7 +150,8 @@ export default function CreateClassPage() {
   const [error, setError] = useState("");
   const token = getStoredToken();
   const derivedClassName =
-    schoolLevels.find((l) => l.code === selectedLevel)?.display_name || selectedLevel;
+    schoolLevels.find((l) => l.code === selectedLevel)?.display_name ||
+    selectedLevel;
 
   useEffect(() => {
     const fetchLevels = async () => {
@@ -62,7 +180,6 @@ export default function CreateClassPage() {
     setMessage("");
     setError("");
 
-
     if (!selectedLevel) {
       setError("Please select a school level");
       return;
@@ -84,7 +201,9 @@ export default function CreateClassPage() {
         token
       );
 
-      setMessage(`✓ Class "${nameToCreate}" created successfully! You can create another class or go to class management.`);
+      setMessage(
+        `✓ Class "${nameToCreate}" created successfully! You can create another class or go to class management.`
+      );
       setSelectedLevel(schoolLevels[0]?.code || "");
     } catch (err) {
       setError(
@@ -142,7 +261,8 @@ export default function CreateClassPage() {
               ))}
             </select>
             <p className="text-xs text-gray-500 mt-2">
-              Subjects will be automatically assigned based on the selected level
+              Subjects will be automatically assigned based on the selected
+              level
             </p>
           </div>
 
@@ -170,7 +290,9 @@ export default function CreateClassPage() {
             <div className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700">
               {derivedClassName || "(select a level to see class name)"}
             </div>
-            <p className="text-xs text-gray-500 mt-2">Class name is auto-generated from the selected level</p>
+            <p className="text-xs text-gray-500 mt-2">
+              Class name is auto-generated from the selected level
+            </p>
           </div>
 
           <button
@@ -200,7 +322,9 @@ export default function CreateClassPage() {
         </form>
 
         <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-blue-900 mb-2">Available Levels:</h3>
+          <h3 className="font-semibold text-blue-900 mb-2">
+            Available Levels:
+          </h3>
           <div className="text-sm text-blue-800">
             <p>• Nursery: NUR1, NUR2, NUR3</p>
             <p>• Primary: PRY1 - PRY6</p>

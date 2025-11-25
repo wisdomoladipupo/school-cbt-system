@@ -18,7 +18,11 @@ export default function AdminClassManagement() {
       const data = await classesAPI.listClasses();
       setClasses(data);
     } catch (error) {
-      setMessage(`Error fetching classes: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching classes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, []);
 
@@ -28,7 +32,11 @@ export default function AdminClassManagement() {
       const data = await usersAPI.list(token);
       setStudents(data.filter((u) => u.role === "student"));
     } catch (error) {
-      setMessage(`Error fetching students: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching students: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, [token]);
 
@@ -61,7 +69,9 @@ export default function AdminClassManagement() {
       setSelectedStudent(null);
       fetchStudents();
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }

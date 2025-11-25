@@ -15,7 +15,9 @@ export default function CreateExamBuilder() {
   const [questions, setQuestions] = useState<Question[]>([
     { question: "", options: ["", "", "", ""], correctAnswer: null },
   ]);
-  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>({});
+  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>(
+    {}
+  );
   const token = getStoredToken();
 
   const [title, setTitle] = useState("");
@@ -95,12 +97,16 @@ export default function CreateExamBuilder() {
     try {
       setUploadingImage({ ...uploadingImage, [index]: true });
       const result = await questionsAPI.uploadImage(file, token);
-      
+
       const updated = [...questions];
       updated[index].imageUrl = result.image_url;
       setQuestions(updated);
     } catch (error) {
-      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      alert(
+        `Upload failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setUploadingImage({ ...uploadingImage, [index]: false });
     }
@@ -178,7 +184,9 @@ export default function CreateExamBuilder() {
       setTitle("");
       setDescription("");
       setDuration(30);
-      setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: null }]);
+      setQuestions([
+        { question: "", options: ["", "", "", ""], correctAnswer: null },
+      ]);
       setSelectedClass(null);
       setSelectedSubject(null);
     } catch (err) {
@@ -219,7 +227,11 @@ export default function CreateExamBuilder() {
             />
             <select
               value={selectedClass ?? ""}
-              onChange={(e) => setSelectedClass(e.target.value ? parseInt(e.target.value) : null)}
+              onChange={(e) =>
+                setSelectedClass(
+                  e.target.value ? parseInt(e.target.value) : null
+                )
+              }
               className="flex-1 p-2 border rounded"
             >
               <option value="">-- Select Class --</option>
@@ -231,7 +243,11 @@ export default function CreateExamBuilder() {
             </select>
             <select
               value={selectedSubject ?? ""}
-              onChange={(e) => setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)}
+              onChange={(e) =>
+                setSelectedSubject(
+                  e.target.value ? parseInt(e.target.value) : null
+                )
+              }
               className="flex-1 p-2 border rounded"
               disabled={!classSubjects.length}
             >
@@ -285,7 +301,9 @@ export default function CreateExamBuilder() {
           <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
             {q.imageUrl ? (
               <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">Question Image:</p>
+                <p className="text-sm font-medium text-gray-700">
+                  Question Image:
+                </p>
                 <img
                   src={`http://localhost:8000${q.imageUrl}`}
                   alt="Question"
@@ -313,7 +331,9 @@ export default function CreateExamBuilder() {
                 />
                 <div className="text-center py-2">
                   <p className="text-gray-600">
-                    {uploadingImage[index] ? "Uploading..." : "Click to upload an image for this question"}
+                    {uploadingImage[index]
+                      ? "Uploading..."
+                      : "Click to upload an image for this question"}
                   </p>
                 </div>
               </label>
@@ -324,7 +344,10 @@ export default function CreateExamBuilder() {
           <div className="space-y-3">
             <h3 className="font-semibold text-black">Options</h3>
             {q.options.map((opt, optIndex) => (
-              <div key={optIndex} className="flex text-black items-center gap-3">
+              <div
+                key={optIndex}
+                className="flex text-black items-center gap-3"
+              >
                 <input
                   type="radio"
                   name={`correct-${index}`}

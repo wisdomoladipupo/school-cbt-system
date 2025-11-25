@@ -90,7 +90,7 @@ export default function ManageUsersPage() {
         },
         token
       );
-      
+
       // If student and class is selected, assign to class
       if (form.role === "student" && form.class_id) {
         try {
@@ -106,7 +106,13 @@ export default function ManageUsersPage() {
       }
 
       setUsers([...users, newUser]);
-      setForm({ full_name: "", email: "", password: "", role: "student", class_id: "" });
+      setForm({
+        full_name: "",
+        email: "",
+        password: "",
+        role: "student",
+        class_id: "",
+      });
       setShowModal(false);
       setErrorMsg("");
     } catch (err) {
@@ -135,10 +141,11 @@ export default function ManageUsersPage() {
 
     try {
       setIsSubmitting(true);
-      const updates: { full_name?: string; password?: string; role?: string } = {
-        full_name: editForm.full_name,
-        role: editForm.role,
-      };
+      const updates: { full_name?: string; password?: string; role?: string } =
+        {
+          full_name: editForm.full_name,
+          role: editForm.role,
+        };
       if (editForm.password) {
         updates.password = editForm.password;
       }

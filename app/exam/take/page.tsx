@@ -3,13 +3,18 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "../../dashboard/layout";
-import { examsAPI, questionsAPI, resultsAPI, getStoredToken } from "../../../lib/api";
+import {
+  examsAPI,
+  questionsAPI,
+  resultsAPI,
+  getStoredToken,
+} from "../../../lib/api";
 import Timer, { TimerHandle } from "../../../components/cbt/Timer";
 import QuestionCard from "../../../components/cbt/QuestionCard";
 
 // Page types
 export interface MCQQuestion {
-  question: string;       // HTML content
+  question: string; // HTML content
   options: string[];
   correctAnswer?: string | number;
 }
@@ -83,7 +88,7 @@ export default function TakeExamPage() {
 
   // Answer handler
   const handleAnswer = (qIndex: number, value: string | number) => {
-    setAnswers(prev => {
+    setAnswers((prev) => {
       const copy = [...prev];
       copy[qIndex] = value;
       return copy;
@@ -92,11 +97,11 @@ export default function TakeExamPage() {
 
   const handleNext = () => {
     if (!exam) return;
-    setCurrentIndex(i => Math.min(i + 1, exam.questions.length - 1));
+    setCurrentIndex((i) => Math.min(i + 1, exam.questions.length - 1));
   };
 
   const handlePrev = () => {
-    setCurrentIndex(i => Math.max(i - 1, 0));
+    setCurrentIndex((i) => Math.max(i - 1, 0));
   };
 
   // Compute score
@@ -159,7 +164,9 @@ export default function TakeExamPage() {
       <DashboardLayout>
         <div className="space-y-6 p-6">
           <h1 className="text-2xl font-semibold">Exam Submitted</h1>
-          <p className="text-lg">You scored {score} / {max}</p>
+          <p className="text-lg">
+            You scored {score} / {max}
+          </p>
           <div className="flex gap-2">
             <button
               className="px-4 py-2 bg-blue-600 text-white rounded"
@@ -206,7 +213,9 @@ export default function TakeExamPage() {
               index={currentIndex}
               total={exam.questions.length}
               selected={answers[currentIndex]}
-              onAnswer={(value: string | number) => handleAnswer(currentIndex, value)}
+              onAnswer={(value: string | number) =>
+                handleAnswer(currentIndex, value)
+              }
             />
 
             <div className="flex justify-between mt-4">

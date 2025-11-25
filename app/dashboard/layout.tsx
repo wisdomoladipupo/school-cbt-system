@@ -10,7 +10,9 @@ interface DashboardLayoutProps {
 }
 
 export default function DashboardLayout({ children }: DashboardLayoutProps) {
-  const [userRole, setUserRole] = useState<"admin" | "teacher" | "student" | null>(null);
+  const [userRole, setUserRole] = useState<
+    "admin" | "teacher" | "student" | null
+  >(null);
   const [userName, setUserName] = useState<string>("");
   const router = useRouter();
 
@@ -40,7 +42,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       <aside className="w-64 bg-indigo-900 text-white p-6 shadow-lg">
         <div className="mb-8">
           <h1 className="text-2xl font-bold">School CBT</h1>
-          <p className="text-indigo-300 text-sm mt-1 capitalize">{userRole} Portal</p>
+          <p className="text-indigo-300 text-sm mt-1 capitalize">
+            {userRole} Portal
+          </p>
         </div>
 
         <nav className="space-y-2">
@@ -111,15 +115,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">Welcome, <span className="font-semibold">{userName}</span></span>
+              <span className="text-sm text-gray-600">
+                Welcome, <span className="font-semibold">{userName}</span>
+              </span>
             </div>
           </div>
         </header>
 
         {/* Page Content */}
-        <section className="flex-1 p-6 overflow-auto">
-          {children}
-        </section>
+        <section className="flex-1 p-6 overflow-auto">{children}</section>
       </main>
     </div>
   );

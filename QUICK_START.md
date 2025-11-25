@@ -61,6 +61,7 @@ npm run dev
 ### 3️⃣ Default Admin Account
 
 After backend initialization:
+
 - **Email:** admin@school.local
 - **Password:** adminpass
 - **Role:** admin
@@ -68,6 +69,7 @@ After backend initialization:
 ## First Time Usage Flow
 
 ### 1. Login as Admin
+
 ```
 URL: http://localhost:3000/auth/login
 Email: admin@school.local
@@ -75,42 +77,48 @@ Password: adminpass
 ```
 
 ### 2. Create Teacher (from Admin Dashboard)
+
 - Go to "Manage Users"
 - Click "Add User"
 - Select Role: Teacher
 - Fill in details
 
 ### 3. Create Student (as Teacher)
+
 - Login as teacher
 - Dashboard → "Add Student"
 - Fill in student details
 
 ### 4. Create Exam (as Teacher)
+
 - Dashboard → "Create Exam"
 - Add questions with options
 - Publish exam
 
 ### 5. Take Exam (as Student)
+
 - Student dashboard shows assigned exams
 - Click to take exam
 - Answer questions
 - Submit results
 
 ### 6. View Results
+
 - Student: Dashboard → Results
 - Teacher: Dashboard → view student results
 
 ## Available Roles
 
-| Role | Access |
-|------|--------|
-| **Admin** | Everything: users, exams, results, analytics |
-| **Teacher** | Create exams, view results, manage students |
-| **Student** | Take exams, view personal results |
+| Role        | Access                                       |
+| ----------- | -------------------------------------------- |
+| **Admin**   | Everything: users, exams, results, analytics |
+| **Teacher** | Create exams, view results, manage students  |
+| **Student** | Take exams, view personal results            |
 
 ## Troubleshooting
 
 ### Backend won't start
+
 ```bash
 # Check Python is installed
 python --version
@@ -121,6 +129,7 @@ python -m uvicorn app.main:app --reload
 ```
 
 ### Frontend won't start
+
 ```bash
 # Clear node_modules and reinstall
 rm -rf node_modules package-lock.json
@@ -129,12 +138,14 @@ npm run dev
 ```
 
 ### Cannot connect to backend
+
 1. Verify backend is running: `http://localhost:8000`
 2. Check `.env.local` has correct API URL
 3. Check browser console for CORS errors
 4. Restart both servers
 
 ### Port already in use
+
 ```bash
 # Backend (use different port)
 python -m uvicorn app.main:app --reload --port 8001
@@ -197,6 +208,7 @@ python -m uvicorn app.main:app --reload  # Start server
 ## Common Tasks
 
 ### Create a new exam
+
 1. Login as teacher
 2. Dashboard → "Create Exam"
 3. Add questions with correct answers
@@ -204,17 +216,20 @@ python -m uvicorn app.main:app --reload  # Start server
 5. Publish
 
 ### View student results
+
 1. Login as teacher or admin
 2. Go to Results section
 3. Filter by exam or student
 
 ### Reset everything
+
 1. Stop both servers
 2. Delete `backend/school_cbt.db`
 3. Start backend (recreates DB)
 4. Login with default admin account
 
 ### Export data
+
 ```bash
 # Backup database
 cp backend/school_cbt.db backup_$(date +%Y%m%d).db
@@ -233,12 +248,15 @@ python backend/query_db.py
 ## Production Deployment
 
 ### Frontend (Vercel/Netlify)
+
 ```bash
 npm run build
 ```
+
 Deploy the `.next` folder or connect GitHub repo
 
 ### Backend (Heroku/Railway/Render)
+
 1. Set environment variables in platform
 2. Point to production database
 3. Use production ASGI server (gunicorn)
@@ -257,6 +275,7 @@ Deploy the `.next` folder or connect GitHub repo
 ## Support
 
 For issues or questions:
+
 1. Check error messages in browser console
 2. Check server terminal logs
 3. Read the `API_INTEGRATION_GUIDE.md`

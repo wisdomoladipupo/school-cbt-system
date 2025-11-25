@@ -9,7 +9,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     const user = getStoredUser();
-    
+
     if (!user) {
       // Not logged in, redirect to login
       router.push("/auth/login");

@@ -225,9 +225,13 @@ export const usersAPI = {
           body = await response.text();
         }
         const b = body as Record<string, unknown> | string | null;
-        const detail = (typeof b === "object" && b !== null && (b.detail ?? b.message)) ?? b;
-        const message = typeof detail === "string" ? detail : JSON.stringify(detail);
-        throw new Error(message || `Failed to fetch users (status ${response.status})`);
+        const detail =
+          (typeof b === "object" && b !== null && (b.detail ?? b.message)) ?? b;
+        const message =
+          typeof detail === "string" ? detail : JSON.stringify(detail);
+        throw new Error(
+          message || `Failed to fetch users (status ${response.status})`
+        );
       }
 
       return response.json();
@@ -260,7 +264,10 @@ export const usersAPI = {
     return response.json();
   },
 
-  delete: async (userId: number, token: string): Promise<{ detail: string }> => {
+  delete: async (
+    userId: number,
+    token: string
+  ): Promise<{ detail: string }> => {
     const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
       method: "DELETE",
       headers: {
@@ -293,9 +300,13 @@ export const usersAPI = {
           body = await response.text();
         }
         const b = body as Record<string, unknown> | string | null;
-        const detail = (typeof b === "object" && b !== null && (b.detail ?? b.message)) ?? b;
-        const message = typeof detail === "string" ? detail : JSON.stringify(detail);
-        throw new Error(message || `Failed to fetch students (status ${response.status})`);
+        const detail =
+          (typeof b === "object" && b !== null && (b.detail ?? b.message)) ?? b;
+        const message =
+          typeof detail === "string" ? detail : JSON.stringify(detail);
+        throw new Error(
+          message || `Failed to fetch students (status ${response.status})`
+        );
       }
 
       return response.json();
@@ -359,7 +370,11 @@ export const examsAPI = {
     examId: number,
     file: File,
     token: string
-  ): Promise<{ success: boolean; questions_imported: number; exam_id: number }> => {
+  ): Promise<{
+    success: boolean;
+    questions_imported: number;
+    exam_id: number;
+  }> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -388,10 +403,7 @@ export const examsAPI = {
 // ============================================
 
 export const questionsAPI = {
-  create: async (
-    payload: QuestionCreate,
-    token: string
-  ): Promise<Question> => {
+  create: async (payload: QuestionCreate, token: string): Promise<Question> => {
     const response = await fetch(`${API_BASE_URL}/api/questions`, {
       method: "POST",
       headers: {
@@ -410,10 +422,13 @@ export const questionsAPI = {
   },
 
   getForExam: async (examId: number): Promise<Question[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/questions/exam/${examId}`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/questions/exam/${examId}`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
 
     if (!response.ok) {
       throw new Error("Failed to fetch questions");
@@ -422,7 +437,10 @@ export const questionsAPI = {
     return response.json();
   },
 
-  uploadImage: async (file: File, token: string): Promise<{ image_url: string }> => {
+  uploadImage: async (
+    file: File,
+    token: string
+  ): Promise<{ image_url: string }> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -609,7 +627,8 @@ export const classesAPI = {
 
       const eb = errBody as Record<string, unknown> | null;
       const detail: unknown = eb?.detail ?? eb?.message ?? errBody;
-      const message = typeof detail === "string" ? detail : JSON.stringify(detail);
+      const message =
+        typeof detail === "string" ? detail : JSON.stringify(detail);
       throw new Error(message || "Failed to assign student to class");
     }
 
@@ -647,14 +666,17 @@ export const classesAPI = {
     subjectIds: number[],
     token: string
   ): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(subjectIds),
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(subjectIds),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -669,13 +691,16 @@ export const classesAPI = {
     subjectId: number,
     token: string
   ): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -690,12 +715,15 @@ export const classesAPI = {
     subjectId: number,
     token: string
   ): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
-      method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();

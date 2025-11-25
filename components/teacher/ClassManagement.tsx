@@ -12,7 +12,8 @@ export default function TeacherClassManagement() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const token = getStoredToken();
-  const messageText = typeof message === "string" ? message : JSON.stringify(message);
+  const messageText =
+    typeof message === "string" ? message : JSON.stringify(message);
 
   const fetchTeacherClasses = useCallback(async () => {
     try {
@@ -21,7 +22,11 @@ export default function TeacherClassManagement() {
       const allClasses = await classesAPI.listClasses();
       setMyClasses(allClasses);
     } catch (error) {
-      setMessage(`Error fetching classes: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching classes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, []);
 
@@ -31,7 +36,11 @@ export default function TeacherClassManagement() {
       const data = await usersAPI.listStudents(token);
       setStudents(data);
     } catch (error) {
-      setMessage(`Error fetching students: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching students: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, [token]);
 
@@ -60,21 +69,31 @@ export default function TeacherClassManagement() {
       );
       // Build a safe success message
       let successMessage = "Success! Student assigned to class.";
-      if (result && typeof result === 'object') {
+      if (result && typeof result === "object") {
         const eb = result as unknown as Record<string, unknown> | null;
         const parts: string[] = [];
-        const subjectsAssigned = typeof eb?.['subjects_assigned'] === 'number' ? (eb!['subjects_assigned'] as number) : undefined;
-        const examsCreated = typeof eb?.['exams_created'] === 'number' ? (eb!['exams_created'] as number) : undefined;
-        if (subjectsAssigned !== undefined) parts.push(`${subjectsAssigned} subjects assigned`);
-        if (examsCreated !== undefined) parts.push(`${examsCreated} exams created`);
-        if (parts.length > 0) successMessage += ' ' + parts.join(', ') + '.';
+        const subjectsAssigned =
+          typeof eb?.["subjects_assigned"] === "number"
+            ? (eb!["subjects_assigned"] as number)
+            : undefined;
+        const examsCreated =
+          typeof eb?.["exams_created"] === "number"
+            ? (eb!["exams_created"] as number)
+            : undefined;
+        if (subjectsAssigned !== undefined)
+          parts.push(`${subjectsAssigned} subjects assigned`);
+        if (examsCreated !== undefined)
+          parts.push(`${examsCreated} exams created`);
+        if (parts.length > 0) successMessage += " " + parts.join(", ") + ".";
       }
       setMessage(successMessage);
       setSelectedStudent(null);
       await fetchStudents();
     } catch (error) {
-      console.error('Teacher assign error:', error);
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      console.error("Teacher assign error:", error);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -149,7 +168,8 @@ export default function TeacherClassManagement() {
       {/* Info */}
       <div className="mt-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
         <p className="text-sm text-blue-800">
-          ℹ️ When you assign a student to a class, exams for all subjects in that class will be automatically created.
+          ℹ️ When you assign a student to a class, exams for all subjects in
+          that class will be automatically created.
         </p>
       </div>
     </div>

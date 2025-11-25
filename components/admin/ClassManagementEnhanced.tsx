@@ -2,14 +2,21 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { classesAPI, usersAPI, getStoredToken } from "@/lib/api";
-import type { User, Class, Subject, SubjectWithTeachers, SchoolLevel, ClassWithSubjects } from "@/lib/api";
+import type {
+  User,
+  Class,
+  Subject,
+  SubjectWithTeachers,
+  SchoolLevel,
+  ClassWithSubjects,
+} from "@/lib/api";
 import { useRouter } from "next/navigation";
 
 export default function AdminClassManagement() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"students" | "teachers" | "details">(
-    "students"
-  );
+  const [activeTab, setActiveTab] = useState<
+    "students" | "teachers" | "details"
+  >("students");
   const [classes, setClasses] = useState<Class[]>([]);
   const [schoolLevels, setSchoolLevels] = useState<SchoolLevel[]>([]);
   const [students, setStudents] = useState<User[]>([]);
@@ -20,7 +27,9 @@ export default function AdminClassManagement() {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(null);
+  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(
+    null
+  );
   const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<
     SubjectWithTeachers[]
   >([]);
@@ -29,7 +38,8 @@ export default function AdminClassManagement() {
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
 
   const token = getStoredToken();
-  const messageText = typeof message === "string" ? message : JSON.stringify(message);
+  const messageText =
+    typeof message === "string" ? message : JSON.stringify(message);
 
   const fetchClasses = useCallback(async () => {
     try {
@@ -159,7 +169,9 @@ export default function AdminClassManagement() {
       setIsSubjectsModalOpen(false);
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -180,12 +192,18 @@ export default function AdminClassManagement() {
       );
       // Safely build message
       let successMessage = "Success! Student assigned to class.";
-      if (result && typeof result === 'object') {
+      if (result && typeof result === "object") {
         const parts = [];
-        if (result.subjects_assigned !== undefined && result.subjects_assigned !== null) {
+        if (
+          result.subjects_assigned !== undefined &&
+          result.subjects_assigned !== null
+        ) {
           parts.push(`${result.subjects_assigned} subjects assigned`);
         }
-        if (result.exams_created !== undefined && result.exams_created !== null) {
+        if (
+          result.exams_created !== undefined &&
+          result.exams_created !== null
+        ) {
           parts.push(`${result.exams_created} exams created`);
         }
         if (parts.length > 0) {
@@ -198,7 +216,9 @@ export default function AdminClassManagement() {
       fetchClassDetails(selectedClass);
     } catch (error) {
       console.error("Student assignment error:", error);
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -227,7 +247,9 @@ export default function AdminClassManagement() {
       setSelectedSubject(null);
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -274,7 +296,9 @@ export default function AdminClassManagement() {
         >
           <option value="">-- Choose a class --</option>
           {schoolLevels.map((level) => {
-            const classesInLevel = classes.filter((c) => c.level === level.code);
+            const classesInLevel = classes.filter(
+              (c) => c.level === level.code
+            );
             if (classesInLevel.length === 0) return null;
             return (
               <optgroup key={level.code} label={level.display_name}>
@@ -376,26 +400,30 @@ export default function AdminClassManagement() {
               </div>
 
               {/* Display class students if available */}
-              {classDetails && classDetails.students && classDetails.students.length > 0 && (
-                <div className="p-4 bg-gray-50 rounded-lg">
-                  <h3 className="font-semibold text-gray-800 mb-3">
-                    Students in {classDetails.name}
-                  </h3>
-                  <div className="space-y-2">
-                    {classDetails.students.map((student: User) => (
-                      <div
-                        key={student.id}
-                        className="p-3 bg-white border border-gray-200 rounded-lg"
-                      >
-                        <p className="font-medium text-gray-900">
-                          {student.full_name}
-                        </p>
-                        <p className="text-sm text-gray-600">{student.email}</p>
-                      </div>
-                    ))}
+              {classDetails &&
+                classDetails.students &&
+                classDetails.students.length > 0 && (
+                  <div className="p-4 bg-gray-50 rounded-lg">
+                    <h3 className="font-semibold text-gray-800 mb-3">
+                      Students in {classDetails.name}
+                    </h3>
+                    <div className="space-y-2">
+                      {classDetails.students.map((student: User) => (
+                        <div
+                          key={student.id}
+                          className="p-3 bg-white border border-gray-200 rounded-lg"
+                        >
+                          <p className="font-medium text-gray-900">
+                            {student.full_name}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            {student.email}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           )}
 
@@ -572,7 +600,8 @@ export default function AdminClassManagement() {
                       <p className="text-xs text-gray-600">{teacher.email}</p>
                     </div>
                   ))}
-                  {(!classDetails.teachers || classDetails.teachers.length === 0) && (
+                  {(!classDetails.teachers ||
+                    classDetails.teachers.length === 0) && (
                     <p className="text-sm text-gray-500 italic">
                       No teachers assigned to this class yet
                     </p>
@@ -587,7 +616,9 @@ export default function AdminClassManagement() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
           <div className="bg-white p-6 rounded w-full max-w-2xl">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold">Edit Subjects for {classDetails?.name}</h3>
+              <h3 className="text-lg font-semibold">
+                Edit Subjects for {classDetails?.name}
+              </h3>
               <button
                 onClick={() => setIsSubjectsModalOpen(false)}
                 className="text-gray-500 hover:text-gray-700"
@@ -599,14 +630,20 @@ export default function AdminClassManagement() {
 
             <div className="max-h-64 overflow-auto grid grid-cols-2 gap-3">
               {allSubjects.map((s) => (
-                <label key={s.id} className="flex items-center gap-2 p-2 border rounded">
+                <label
+                  key={s.id}
+                  className="flex items-center gap-2 p-2 border rounded"
+                >
                   <input
                     type="checkbox"
                     checked={selectedSubjectIds.includes(s.id)}
                     onChange={() => toggleSubjectSelection(s.id)}
                     className="w-4 h-4"
                   />
-                  <span className="text-sm">{s.name} <span className="text-xs text-gray-500">({s.code})</span></span>
+                  <span className="text-sm">
+                    {s.name}{" "}
+                    <span className="text-xs text-gray-500">({s.code})</span>
+                  </span>
                 </label>
               ))}
             </div>

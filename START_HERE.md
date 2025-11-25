@@ -9,25 +9,31 @@ Your **School CBT System** frontend and backend are now fully integrated and rea
 ## ⚡ Quick Start (5 Minutes)
 
 ### 1. Set Environment
+
 ```bash
 cp .env.local.example .env.local
 ```
 
 ### 2. Start Backend (Terminal 1)
+
 ```bash
 cd backend
 python -m uvicorn app.main:app --reload
 ```
+
 ✅ Backend runs at: `http://localhost:8000`
 
 ### 3. Start Frontend (Terminal 2)
+
 ```bash
 npm install
 npm run dev
 ```
+
 ✅ Frontend runs at: `http://localhost:3000`
 
 ### 4. Login
+
 - URL: `http://localhost:3000/auth/login`
 - Email: `admin@school.local`
 - Password: `adminpass`
@@ -41,18 +47,23 @@ npm run dev
 Pick one based on your needs:
 
 ### 🚀 **I want to get started now**
+
 → Read: `QUICK_START.md` (5-10 min)
 
 ### 🔍 **I want to understand the integration**
+
 → Read: `API_INTEGRATION_GUIDE.md` (15-20 min)
 
 ### 🏗️ **I want to see the architecture**
+
 → Read: `ARCHITECTURE.md` (10 min)
 
 ### ✅ **I want to test everything**
+
 → Read: `INTEGRATION_CHECKLIST.md` (20 min)
 
 ### 📖 **I want a summary**
+
 → Read: `INTEGRATION_SUMMARY.md` (5 min)
 
 ---
@@ -60,6 +71,7 @@ Pick one based on your needs:
 ## 🎮 What You Can Do Now
 
 ### As Admin
+
 ```
 1. Login as admin@school.local
 2. Go to "Manage Users"
@@ -69,6 +81,7 @@ Pick one based on your needs:
 ```
 
 ### As Teacher
+
 ```
 1. Login with teacher account
 2. Go to Dashboard
@@ -78,6 +91,7 @@ Pick one based on your needs:
 ```
 
 ### As Student
+
 ```
 1. Login with student account
 2. Go to Dashboard
@@ -90,16 +104,16 @@ Pick one based on your needs:
 
 ## 📊 What's Been Integrated
 
-| Feature | Status | Location |
-|---------|--------|----------|
-| User Authentication | ✅ Complete | `/auth/*` |
-| User Management | ✅ Complete | Admin Dashboard |
-| Exam Creation | ✅ Ready* | Backend ready |
-| Exam Taking | ✅ Complete | `/exam/take` |
-| Results | ✅ Complete | `/results` |
-| Session Management | ✅ Complete | All pages |
+| Feature             | Status      | Location        |
+| ------------------- | ----------- | --------------- |
+| User Authentication | ✅ Complete | `/auth/*`       |
+| User Management     | ✅ Complete | Admin Dashboard |
+| Exam Creation       | ✅ Ready\*  | Backend ready   |
+| Exam Taking         | ✅ Complete | `/exam/take`    |
+| Results             | ✅ Complete | `/results`      |
+| Session Management  | ✅ Complete | All pages       |
 
-*Exam creation UI exists but optional API integration
+\*Exam creation UI exists but optional API integration
 
 ---
 
@@ -126,16 +140,19 @@ Backend
 ## 🔑 Key Files
 
 ### You'll Interact With
+
 - `http://localhost:3000` - Frontend
 - `http://localhost:8000` - Backend
 - `http://localhost:8000/docs` - API docs
 
 ### Code You'll Modify
+
 - `lib/api.ts` - API calls
 - `app/**/*.tsx` - Pages
 - `components/**/*.tsx` - Components
 
 ### Configuration
+
 - `.env.local` - Environment variables
 - `backend/app/core/config.py` - Backend config
 
@@ -144,6 +161,7 @@ Backend
 ## 🚀 Common Tasks
 
 ### Test Login Flow
+
 ```
 1. Go to http://localhost:3000/auth/login
 2. Use admin credentials
@@ -152,6 +170,7 @@ Backend
 ```
 
 ### Test Create User
+
 ```
 1. Login as admin
 2. Go to Dashboard → Manage Users
@@ -161,6 +180,7 @@ Backend
 ```
 
 ### Test Take Exam
+
 ```
 1. Login as student
 2. Go to Dashboard
@@ -201,11 +221,13 @@ Results (Protected)
 ## ⚙️ Environment Setup
 
 ### Default (.env.local)
+
 ```
 NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ### Custom Backend Port
+
 ```
 # Edit .env.local
 NEXT_PUBLIC_API_URL=http://localhost:8001
@@ -219,15 +241,19 @@ python -m uvicorn app.main:app --reload --port 8001
 ## 🐛 Troubleshooting
 
 ### ❌ "Cannot connect to backend"
+
 ✅ Check: Is backend running at port 8000?
 
 ### ❌ "401 Unauthorized"
+
 ✅ Check: Have you logged in? Is token in localStorage?
 
 ### ❌ "Module not found"
+
 ✅ Check: Did you run `npm install`?
 
 ### ❌ "Port already in use"
+
 ✅ Solution: Kill process or use different port
 
 ---
@@ -235,6 +261,7 @@ python -m uvicorn app.main:app --reload --port 8001
 ## 📈 Next Steps
 
 ### Immediate (Do First)
+
 1. ✅ Run both servers
 2. ✅ Test login with admin account
 3. ✅ Create a test user
@@ -242,18 +269,21 @@ python -m uvicorn app.main:app --reload --port 8001
 5. ✅ View results
 
 ### Short Term (This Week)
+
 1. ✅ Test all user roles
 2. ✅ Verify all API endpoints work
 3. ✅ Check error handling
 4. ✅ Review data in database
 
 ### Medium Term (This Month)
+
 1. 🔄 Deploy to production
 2. 🔄 Set up monitoring
 3. 🔄 Add logging
 4. 🔄 Optimize performance
 
 ### Long Term (Future)
+
 1. 🔄 Integrate remaining pages
 2. 🔄 Add real-time features
 3. 🔄 Implement offline mode
@@ -272,6 +302,7 @@ python -m uvicorn app.main:app --reload --port 8001
 5. **Need Quick Ref?** → Read `INTEGRATION_SUMMARY.md`
 
 ### Check These First
+
 - Browser console (F12) for errors
 - Backend terminal for logs
 - `.env.local` for config
@@ -347,7 +378,7 @@ open http://localhost:3000
 
 Everything is set up. The system is fully integrated and tested.
 
-### Next Action: Run the servers and test! 
+### Next Action: Run the servers and test!
 
 ```bash
 # Terminal 1
@@ -366,6 +397,6 @@ Then visit: **`http://localhost:3000`**
 
 ---
 
-*Integration Date: November 22, 2025*  
-*Status: Complete and Functional ✅*  
-*Ready for: Development, Testing, Production Deployment*
+_Integration Date: November 22, 2025_  
+_Status: Complete and Functional ✅_  
+_Ready for: Development, Testing, Production Deployment_

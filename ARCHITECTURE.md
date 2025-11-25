@@ -224,6 +224,7 @@ UTILITIES
 ## API Response Types
 
 ### Successful Response
+
 ```json
 {
   "data": {...},
@@ -232,6 +233,7 @@ UTILITIES
 ```
 
 ### Error Response
+
 ```json
 {
   "detail": "Error message",
@@ -240,6 +242,7 @@ UTILITIES
 ```
 
 ### Authentication Response
+
 ```json
 {
   "access_token": "eyJhbGc...",
@@ -250,12 +253,14 @@ UTILITIES
 ## Request Headers
 
 ### Public Endpoints
+
 ```
 GET /api/exams
 Content-Type: application/json
 ```
 
 ### Protected Endpoints
+
 ```
 POST /api/results/submit
 Content-Type: application/json

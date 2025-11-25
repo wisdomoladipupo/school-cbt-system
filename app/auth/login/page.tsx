@@ -44,7 +44,7 @@ export default function LoginPage() {
 
     try {
       const response = await authAPI.login({ email, password });
-      
+
       // Decode JWT to get user info including role
       const decoded = decodeJWT(response.access_token);
       const userPayload = {
@@ -53,17 +53,17 @@ export default function LoginPage() {
         email,
         role: decoded?.role || "student",
       };
-      
+
       setStoredAuth(response.access_token, userPayload);
 
       if (userPayload.role === "admin") router.push("/dashboard/admin");
-      else if (userPayload.role === "teacher") router.push("/dashboard/teacher");
+      else if (userPayload.role === "teacher")
+        router.push("/dashboard/teacher");
       else router.push("/dashboard/student");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Login failed");
     }
   };
-
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-r from-blue-400 to-indigo-600">
