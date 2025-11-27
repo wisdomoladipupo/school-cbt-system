@@ -1,24 +1,34 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { classesAPI, usersAPI, getStoredToken } from "@/lib/api";
+import { classesAPI, usersAPI } from "@/lib/api/api";
+import { getStoredToken } from "@/lib/api/token";
 import type {
   User,
   Class,
   Subject,
   SubjectWithTeachers,
-  SchoolLevel,
+  SchoolLevel as SchoolLevelType,
   ClassWithSubjects,
 } from "@/lib/api";
 import { useRouter } from "next/navigation";
 
+// Define result types for API calls
+interface AssignStudentResult {
+  subjects_assigned?: number;
+  exams_created?: number;
+}
+
+interface AssignTeacherResult {
+  message?: string;
+}
+
 export default function AdminClassManagement() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<
-    "students" | "teachers" | "details"
-  >("students");
+  const [activeTab, setActiveTab] = useState<"students" | "teachers" | "details">("students");
   const [classes, setClasses] = useState<Class[]>([]);
-  const [schoolLevels, setSchoolLevels] = useState<SchoolLevel[]>([]);
+  const [schoolLevels, setSchoolLevels] = useState<SchoolLevelType[]>([]);
+
   const [students, setStudents] = useState<User[]>([]);
   const [teachers, setTeachers] = useState<User[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
@@ -27,30 +37,24 @@ export default function AdminClassManagement() {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(
-    null
-  );
-  const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<
-    SubjectWithTeachers[]
-  >([]);
+  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(null);
+  const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<SubjectWithTeachers[]>([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
 
   const token = getStoredToken();
-  const messageText =
-    typeof message === "string" ? message : JSON.stringify(message);
+  const messageText = typeof message === "string" ? message : JSON.stringify(message);
 
+  // ----------------------
+  // FETCH FUNCTIONS
+  // ----------------------
   const fetchClasses = useCallback(async () => {
     try {
       const data = await classesAPI.listClasses();
       setClasses(data);
     } catch (error) {
-      setMessage(
-        `Error fetching classes: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      setMessage(`Error fetching classes: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }, []);
 
@@ -69,11 +73,7 @@ export default function AdminClassManagement() {
       const data = await usersAPI.list(token);
       setStudents(data.filter((u) => u.role === "student"));
     } catch (error) {
-      setMessage(
-        `Error fetching students: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      setMessage(`Error fetching students: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }, [token]);
 
@@ -83,11 +83,7 @@ export default function AdminClassManagement() {
       const data = await usersAPI.list(token);
       setTeachers(data.filter((u) => u.role === "teacher"));
     } catch (error) {
-      setMessage(
-        `Error fetching teachers: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      setMessage(`Error fetching teachers: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }, [token]);
 
@@ -95,16 +91,10 @@ export default function AdminClassManagement() {
     try {
       const details = await classesAPI.getClass(classId);
       setClassDetails(details);
-      const subjectData = await classesAPI.getClassSubjectsWithTeachers(
-        classId
-      );
-      setSubjectsWithTeachers(subjectData);
+      const subjectData = await classesAPI.getClassSubjectsWithTeachers(classId);
+      setSubjectsWithTeachers(subjectData as SubjectWithTeachers[]);
     } catch (error) {
-      setMessage(
-        `Error fetching class details: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      setMessage(`Error fetching class details: ${error instanceof Error ? error.message : "Unknown error"}`);
     }
   }, []);
 
@@ -117,6 +107,9 @@ export default function AdminClassManagement() {
     }
   }, []);
 
+  // ----------------------
+  // EFFECTS
+  // ----------------------
   useEffect(() => {
     fetchClasses();
     fetchSchoolLevels();
@@ -130,7 +123,7 @@ export default function AdminClassManagement() {
   }, [token, fetchStudents, fetchTeachers]);
 
   useEffect(() => {
-    if (selectedClass) {
+    if (selectedClass !== null) {
       fetchClassDetails(selectedClass);
     }
   }, [selectedClass, fetchClassDetails]);
@@ -139,6 +132,9 @@ export default function AdminClassManagement() {
     fetchAllSubjects();
   }, [fetchAllSubjects]);
 
+  // ----------------------
+  // SUBJECT MODAL
+  // ----------------------
   const openSubjectsModal = () => {
     if (!classDetails) return;
     const ids = classDetails.subjects?.map((s) => s.id) || [];
@@ -159,24 +155,21 @@ export default function AdminClassManagement() {
     }
     setLoading(true);
     try {
-      const updated = await classesAPI.updateClassSubjects(
-        selectedClass,
-        selectedSubjectIds,
-        token
-      );
+      const updated = await classesAPI.updateClassSubjects(selectedClass, selectedSubjectIds, token);
       setClassDetails(updated);
       setMessage("Success! Class subjects updated.");
       setIsSubjectsModalOpen(false);
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ----------------------
+  // STUDENT ASSIGNMENT
+  // ----------------------
   const handleAssignStudent = async () => {
     if (!selectedClass || !selectedStudent || !token) {
       setMessage("Please select both a class and a student");
@@ -185,45 +178,28 @@ export default function AdminClassManagement() {
 
     setLoading(true);
     try {
-      const result = await classesAPI.assignStudentToClass(
-        selectedClass,
-        selectedStudent,
-        token
-      );
-      // Safely build message
+      const result = await classesAPI.assignStudentToClass(selectedClass, selectedStudent, token) as AssignStudentResult;
+
       let successMessage = "Success! Student assigned to class.";
-      if (result && typeof result === "object") {
-        const parts = [];
-        if (
-          result.subjects_assigned !== undefined &&
-          result.subjects_assigned !== null
-        ) {
-          parts.push(`${result.subjects_assigned} subjects assigned`);
-        }
-        if (
-          result.exams_created !== undefined &&
-          result.exams_created !== null
-        ) {
-          parts.push(`${result.exams_created} exams created`);
-        }
-        if (parts.length > 0) {
-          successMessage += " " + parts.join(", ") + ".";
-        }
-      }
+      const parts = [];
+      if (result.subjects_assigned !== undefined) parts.push(`${result.subjects_assigned} subjects assigned`);
+      if (result.exams_created !== undefined) parts.push(`${result.exams_created} exams created`);
+      if (parts.length > 0) successMessage += " " + parts.join(", ") + ".";
+
       setMessage(successMessage);
       setSelectedStudent(null);
       fetchStudents();
       fetchClassDetails(selectedClass);
     } catch (error) {
-      console.error("Student assignment error:", error);
-      setMessage(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ----------------------
+  // TEACHER ASSIGNMENT
+  // ----------------------
   const handleAssignTeacherToSubject = async () => {
     if (!selectedClass || !selectedTeacher || !selectedSubject || !token) {
       setMessage("Please select a class, teacher, and subject");
@@ -237,30 +213,26 @@ export default function AdminClassManagement() {
         selectedTeacher,
         selectedSubject,
         token
-      );
-      setMessage(
-        `Success! Teacher assigned to subject. ${
-          result.message || "Assignment completed."
-        }`
-      );
+      ) as AssignTeacherResult;
+
+      setMessage(`Success! Teacher assigned to subject. ${result.message || ""}`);
       setSelectedTeacher(null);
       setSelectedSubject(null);
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(
-        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
-      );
+      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // ----------------------
+  // RENDER
+  // ----------------------
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">
-          Manage Classes, Teachers & Students
-        </h2>
+        <h2 className="text-2xl font-bold text-gray-800">Manage Classes, Teachers & Students</h2>
         <button
           onClick={() => router.push("/dashboard/admin/classes/create")}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
@@ -272,9 +244,7 @@ export default function AdminClassManagement() {
       {messageText && (
         <div
           className={`mb-4 p-4 rounded ${
-            messageText.includes("Success")
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
+            messageText.includes("Success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
           }`}
         >
           {messageText}
@@ -283,40 +253,33 @@ export default function AdminClassManagement() {
 
       {/* Class Selection */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <label className="block mb-2 font-semibold text-gray-700">
-          Select Class to Manage
-        </label>
+        <label className="block mb-2 font-semibold text-gray-700">Select Class to Manage</label>
         <select
-          value={selectedClass || ""}
+          value={selectedClass ?? ""}
           onChange={(e) => {
-            setSelectedClass(Number(e.target.value) || null);
+            const val = Number(e.target.value);
+            setSelectedClass(isNaN(val) ? null : val);
             setActiveTab("students");
           }}
           className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
         >
           <option value="">-- Choose a class --</option>
           {schoolLevels.map((level) => {
-            const classesInLevel = classes.filter(
-              (c) => c.level === level.code
-            );
+            const classesInLevel = classes.filter((c) => c.level === level.code);
             if (classesInLevel.length === 0) return null;
             return (
               <optgroup key={level.code} label={level.display_name}>
                 {classesInLevel.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name}
-                  </option>
+                  <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
               </optgroup>
             );
           })}
         </select>
-        <p className="text-sm text-gray-600 mt-2">
-          Classes organized by Nigerian school system levels
-        </p>
+        <p className="text-sm text-gray-600 mt-2">Classes organized by Nigerian school system levels</p>
       </div>
 
-      {selectedClass && (
+      {selectedClass !== null && (
         <>
           {/* Tabs */}
           <div className="flex gap-4 mb-6 border-b border-gray-200">

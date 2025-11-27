@@ -36,6 +36,7 @@ npm run dev
 
 - URL: `http://localhost:3000/auth/login`
 - Email: `admin@school.local`
+- Email: `admin@example.com`
 - Password: `adminpass`
 
 ✅ **You're in!** Start exploring.
@@ -73,7 +74,7 @@ Pick one based on your needs:
 ### As Admin
 
 ```
-1. Login as admin@school.local
+1. Login as admin@example.com
 2. Go to "Manage Users"
 3. Create teachers and students
 4. Create exams

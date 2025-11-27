@@ -2,7 +2,8 @@
 "use client";
 
 import React, { useState } from "react";
-import { usersAPI, getStoredToken } from "@/lib/api";
+import {  getStoredToken } from "@/lib/api";
+import {usersAPI } from '@/lib/api/api'
 
 type UserRole = "student" | "teacher";
 

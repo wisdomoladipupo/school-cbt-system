@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from ..core.db import get_db
 from ..schemas.user import UserCreate, UserOut, UserUpdate
 from ..services import user_service
+from ..models.user import User as UserModel
 from ..api.deps import require_role, get_current_user
 from typing import List
 
@@ -18,12 +19,30 @@ def create_user(payload: UserCreate, db: Session = Depends(get_db), current_user
 
 @router.get("/", response_model=List[UserOut])
 def list_users(db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
-    return db.query(user_service.User).all()  # Slight shortcut; ensure you import correctly if you change
+    # Return all users (admin-only). Use the User model from models.user
+    try:
+        return db.query(UserModel).all()
+    except Exception as e:
+        # Log and return a clear HTTP error for debugging
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to list users: {str(e)}")
+
+
+@router.get("", response_model=List[UserOut])
+def list_users_noslash(db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
+    """Alias endpoint to accept requests without trailing slash so proxies/clients don't trigger a redirect that strips auth headers."""
+    try:
+        return db.query(UserModel).all()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Failed to list users: {str(e)}")
 
 @router.get("/students/list", response_model=List[UserOut])
 def list_students(db: Session = Depends(get_db), current_user = Depends(get_current_user)):
     """Get all students. Accessible to authenticated users (teachers, admins)"""
-    return db.query(user_service.User).filter(user_service.User.role == "student").all()
+    return db.query(UserModel).filter(UserModel.role == "student").all()
 
 @router.put("/{user_id}", response_model=UserOut)
 def update_user_endpoint(user_id: int, payload: UserUpdate, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):

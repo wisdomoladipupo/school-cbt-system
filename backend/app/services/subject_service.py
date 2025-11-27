@@ -1,60 +1,4 @@
 
-    @staticmethod
-    def update_class_subjects(db: Session, class_id: int, subject_ids: list[int]) -> Class:
-        """Update subjects for a class. Replaces all current subjects with the provided list."""
-        class_obj = db.query(Class).filter(Class.id == class_id).first()
-        if not class_obj:
-            raise ValueError("Class not found")
-        
-        # Clear existing subjects
-        class_obj.subjects = []
-        
-        # Add new subjects
-        for subject_id in subject_ids:
-            subject = SubjectService.get_subject_by_id(db, subject_id)
-            if not subject:
-                raise ValueError(f"Subject {subject_id} not found")
-            class_obj.subjects.append(subject)
-        
-        db.commit()
-        db.refresh(class_obj)
-        return class_obj
-
-    @staticmethod
-    def add_subject_to_class(db: Session, class_id: int, subject_id: int) -> Class:
-        """Add a subject to a class"""
-        class_obj = db.query(Class).filter(Class.id == class_id).first()
-        if not class_obj:
-            raise ValueError("Class not found")
-        
-        subject = SubjectService.get_subject_by_id(db, subject_id)
-        if not subject:
-            raise ValueError("Subject not found")
-        
-        if subject not in class_obj.subjects:
-            class_obj.subjects.append(subject)
-            db.commit()
-            db.refresh(class_obj)
-        
-        return class_obj
-
-    @staticmethod
-    def remove_subject_from_class(db: Session, class_id: int, subject_id: int) -> Class:
-        """Remove a subject from a class"""
-        class_obj = db.query(Class).filter(Class.id == class_id).first()
-        if not class_obj:
-            raise ValueError("Class not found")
-        
-        subject = SubjectService.get_subject_by_id(db, subject_id)
-        if not subject:
-            raise ValueError("Subject not found")
-        
-        if subject in class_obj.subjects:
-            class_obj.subjects.remove(subject)
-            db.commit()
-            db.refresh(class_obj)
-        
-        return class_obj
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
 from ..models.subject import (
@@ -216,6 +160,8 @@ class ClassService:
                 duration_minutes=60,
                 published=False,
                 created_by=created_by_id or student_id,
+                class_id=class_id,
+                subject_id=subject.id,
             )
             db.add(exam)
             db.commit()
@@ -408,7 +354,6 @@ class ClassService:
                     for t in teachers
                 ],
             })
-            })
         return result
 
     @staticmethod
@@ -445,24 +390,6 @@ class ClassService:
         
         if subject not in class_obj.subjects:
             class_obj.subjects.append(subject)
-            db.commit()
-            db.refresh(class_obj)
-        
-        return class_obj
-
-    @staticmethod
-    def remove_subject_from_class(db: Session, class_id: int, subject_id: int) -> Class:
-        """Remove a subject from a class"""
-        class_obj = db.query(Class).filter(Class.id == class_id).first()
-        if not class_obj:
-            raise ValueError("Class not found")
-        
-        subject = SubjectService.get_subject_by_id(db, subject_id)
-        if not subject:
-            raise ValueError("Subject not found")
-        
-        if subject in class_obj.subjects:
-            class_obj.subjects.remove(subject)
             db.commit()
             db.refresh(class_obj)
         

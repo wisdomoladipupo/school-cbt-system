@@ -100,7 +100,7 @@ npm run dev
 ### Step 4: Test
 
 1. Visit `http://localhost:3000`
-2. Register or login with `admin@school.local / adminpass`
+2. Register or login with `admin@example.com / adminpass`
 3. Test all features
 
 ## 📚 Documentation Structure
@@ -201,7 +201,7 @@ Frontend (Next.js)
 
 ### Login fails
 
-- Verify credentials (default: `admin@school.local` / `adminpass`)
+- Verify credentials (default: `admin@example.com` / `adminpass`)
 - Check backend database initialized
 - Look for error messages in console
 

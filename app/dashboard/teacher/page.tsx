@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
 import StudentList from "@/components/students/studentList";
@@ -8,6 +8,8 @@ import StudentForm from "@/components/students/studentForm";
 import TeacherClassManagement from "@/components/teacher/ClassManagement";
 import Modal from "@/components/ui/Modal";
 import { Student } from "@/components/students/studentCard";
+import { getStoredToken, User } from "@/lib/api";
+import { usersAPI } from "@/lib/api/api";
 
 export default function TeacherDashboardPage() {
   const router = useRouter();
@@ -16,6 +18,44 @@ export default function TeacherDashboardPage() {
   const [activeTab, setActiveTab] = useState<"overview" | "classes">(
     "overview"
   );
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(true);
+
+  // Fetch students on mount
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        setLoading(true);
+        const token = getStoredToken();
+        if (!token) {
+          setError("Not authenticated");
+          router.push("/auth/login");
+          return;
+        }
+
+        const users = await usersAPI.listStudents(token);
+        // Convert User[] to Student[]
+        const studentList: Student[] = users.map((u: User) => ({
+          id: u.id,
+          regNumber: u.registration_number || `STU-${u.id}`,
+          name: u.full_name,
+          email: u.email,
+          className: u.student_class || "Unassigned",
+        }));
+        setStudents(studentList);
+        setError("");
+      } catch (err) {
+        console.error("Failed to fetch students:", err);
+        setError(
+          err instanceof Error ? err.message : "Failed to fetch students"
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStudents();
+  }, [router]);
 
   const handleAddOrUpdate = (student: Student) => {
     setStudents((prev) => {
@@ -102,8 +142,19 @@ export default function TeacherDashboardPage() {
             </div>
           </div>
 
-          {/* Student List */}
-          <StudentList students={students} onEdit={handleAddOrUpdate} />
+          {/* Error or Student List */}
+          {error && (
+            <div className="p-4 bg-red-50 text-red-700 rounded-lg border border-red-200">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="text-center py-8 text-gray-500">
+              Loading students...
+            </div>
+          ) : (
+            <StudentList students={students} onEdit={handleAddOrUpdate} />
+          )}
         </>
       )}
 

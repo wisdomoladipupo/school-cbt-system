@@ -2,7 +2,8 @@
 
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../dashboard/layout";
-import { resultsAPI, examsAPI, getStoredToken } from "../../lib/api";
+import {  getStoredToken } from "../../lib/api";
+import { examsAPI, resultsAPI } from "../../lib/api/api";
 
 import type { Exam, Result } from "../types/cbt";
 

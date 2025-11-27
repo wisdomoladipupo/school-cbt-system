@@ -6,6 +6,7 @@ from ..schemas.subject import (
     SubjectOut,
     ClassCreate,
     ClassOut,
+    ClassUpdate,
     ClassWithSubjects,
     AssignStudentToClass,
     AssignTeacherToClass,
@@ -37,16 +38,20 @@ def get_current_user(token: str, db: Session = Depends(get_db)) -> User:
 # SUBJECT ENDPOINTS
 # ============================================
 
-
 @router.get("/levels", response_model=list[dict])
 def get_school_levels():
-    """Get all available school levels in Nigerian system"""
+    """Get all available school levels in Nigerian system."""
     try:
         levels = [
-            {"code": level, "display_name": SCHOOL_LEVEL_DISPLAY.get(level, level)}
+            {
+                "code": level,
+                "display_name": SCHOOL_LEVEL_DISPLAY.get(level, level)
+            }
             for level in sorted(NIGERIAN_SCHOOL_SUBJECTS.keys())
         ]
+
         return levels
+
     except Exception as e:
         logger.error(f"Error fetching school levels: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch school levels")
@@ -54,10 +59,9 @@ def get_school_levels():
 
 @router.get("/subjects", response_model=list[SubjectOut])
 def list_subjects(db: Session = Depends(get_db)):
-    """Get all subjects"""
+    """Get all subjects."""
     try:
-        subjects = SubjectService.list_subjects(db)
-        return subjects
+        return SubjectService.list_subjects(db)
     except Exception as e:
         logger.error(f"Error fetching subjects: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch subjects")
@@ -65,10 +69,9 @@ def list_subjects(db: Session = Depends(get_db)):
 
 @router.post("/subjects", response_model=SubjectOut)
 def create_subject(subject: SubjectCreate, db: Session = Depends(get_db)):
-    """Create a new subject"""
+    """Create a new subject."""
     try:
-        db_subject = SubjectService.create_subject(db, subject)
-        return db_subject
+        return SubjectService.create_subject(db, subject)
     except Exception as e:
         logger.error(f"Error creating subject: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to create subject")
@@ -78,13 +81,11 @@ def create_subject(subject: SubjectCreate, db: Session = Depends(get_db)):
 # CLASS ENDPOINTS
 # ============================================
 
-
 @router.post("", response_model=ClassOut)
 def create_class(class_data: ClassCreate, db: Session = Depends(get_db)):
-    """Create a new class with subjects auto-populated for its level"""
+    """Create a new class with subjects auto-populated for its level."""
     try:
-        db_class = ClassService.create_class(db, class_data)
-        return db_class
+        return ClassService.create_class(db, class_data)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
@@ -94,10 +95,9 @@ def create_class(class_data: ClassCreate, db: Session = Depends(get_db)):
 
 @router.get("", response_model=list[ClassOut])
 def list_classes(db: Session = Depends(get_db)):
-    """Get all classes"""
+    """Get all classes."""
     try:
-        classes = ClassService.list_classes(db)
-        return classes
+        return ClassService.list_classes(db)
     except Exception as e:
         logger.error(f"Error fetching classes: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
@@ -105,14 +105,17 @@ def list_classes(db: Session = Depends(get_db)):
 
 @router.get("/{class_id}", response_model=ClassWithSubjects)
 def get_class(class_id: int, db: Session = Depends(get_db)):
-    """Get a specific class with its subjects"""
+    """Get a specific class with its subjects."""
     try:
         db_class = ClassService.get_class_by_id(db, class_id)
         if not db_class:
             raise HTTPException(status_code=404, detail="Class not found")
+
         return db_class
+
     except HTTPException:
         raise
+
     except Exception as e:
         logger.error(f"Error fetching class: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch class")
@@ -120,14 +123,44 @@ def get_class(class_id: int, db: Session = Depends(get_db)):
 
 @router.get("/level/{level}", response_model=list[ClassOut])
 def get_classes_by_level(level: str, db: Session = Depends(get_db)):
-    """Get all classes for a specific level"""
+    """Get all classes for a specific level."""
     try:
-        classes = ClassService.list_classes_by_level(db, level)
-        return classes
+        return ClassService.list_classes_by_level(db, level)
     except Exception as e:
         logger.error(f"Error fetching classes by level: {str(e)}")
         raise HTTPException(status_code=500, detail="Failed to fetch classes")
 
+
+@router.put("/{class_id}", response_model=ClassOut)
+def update_class(class_id: int, data: ClassUpdate, db: Session = Depends(get_db)):
+    """Update class name, level, and subjects."""
+    try:
+        db_class = ClassService.get_class_by_id(db, class_id)
+        if not db_class:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        # Update name (optional)
+        if data.name is not None:
+            db_class.name = data.name
+
+        # Update level (optional)
+        if data.level is not None:
+            db_class.level = data.level
+
+        # Update subjects (optional)
+        if data.subject_ids is not None:
+            subjects = db.query(Subject).filter(
+                Subject.id.in_(data.subject_ids)
+            ).all()
+            db_class.subjects = subjects
+
+        db.commit()
+        db.refresh(db_class)
+        return db_class
+
+    except Exception as e:
+        logger.error(f"Error updating class: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to update class")
 
 # ============================================
 # STUDENT ASSIGNMENT ENDPOINTS

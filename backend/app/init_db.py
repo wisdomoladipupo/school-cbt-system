@@ -5,12 +5,32 @@ from .core.security import hash_password
 def seed():
     Base.metadata.create_all(bind=engine)
     db = SessionLocal()
-    # seed admin if not exists
     from .models.user import User
-    admin = db.query(User).filter(User.email == "admin@school.local").first()
-    if not admin:
-        create_user(db, "Admin User", "admin@school.local", "adminpass", role="admin")
+
+    # Ensure primary admin user exists
+    admin_primary = db.query(User).filter(User.email == "admin@example.com").first()
+    if not admin_primary:
+        create_user(
+            db,
+            "Admin User",
+            "admin@example.com",
+            "adminpass",
+            role="admin",
+        )
+        print("Admin user created: admin@example.com / adminpass")
+
+    # Also support the admin@school.local address used in some docs
+    admin_school = db.query(User).filter(User.email == "admin@school.local").first()
+    if not admin_school:
+        create_user(
+            db,
+            "Admin User",
+            "admin@school.local",
+            "adminpass",
+            role="admin",
+        )
         print("Admin user created: admin@school.local / adminpass")
+
     db.close()
 
 if __name__ == "__main__":

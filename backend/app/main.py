@@ -5,13 +5,20 @@ from .core.db import Base, engine
 from .api import auth, exams, questions, results, users, classes
 import logging
 import os
+from app.core.db import Base, engine
+from app.models.user import User
+
+
 
 app = FastAPI(title="School CBT System - Backend")
 
 # Configure CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "http://127.0.0.1:3000", "http://localhost:3001", "http://127.0.0.1:3001"],
+    # During local development, allow any origin so the dev server (which may
+    # run on localhost or a network IP) can call the API without CORS issues.
+    # In production, set a restricted list of allowed origins.
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

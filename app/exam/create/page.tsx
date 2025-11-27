@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import { questionsAPI, getStoredToken, classesAPI, examsAPI } from "@/lib/api";
+import {  getStoredToken,  } from "@/lib/api";
+import { questionsAPI, classesAPI, examsAPI } from "@/lib/api/api";
 
 interface Question {
   question: string;
@@ -209,13 +210,13 @@ export default function CreateExamBuilder() {
             placeholder="Exam Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-black"
           />
           <textarea
             placeholder="Brief description (optional)"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border rounded"
+            className="w-full p-2 border rounded text-black"
             rows={2}
           />
           <div className="flex gap-3">
@@ -223,7 +224,7 @@ export default function CreateExamBuilder() {
               type="number"
               value={duration}
               onChange={(e) => setDuration(parseInt(e.target.value || "30"))}
-              className="w-32 p-2 border rounded"
+              className="w-32 p-2 border rounded text-black"
             />
             <select
               value={selectedClass ?? ""}
@@ -232,7 +233,7 @@ export default function CreateExamBuilder() {
                   e.target.value ? parseInt(e.target.value) : null
                 )
               }
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded text-black"
             >
               <option value="">-- Select Class --</option>
               {classes.map((c) => (
@@ -248,7 +249,7 @@ export default function CreateExamBuilder() {
                   e.target.value ? parseInt(e.target.value) : null
                 )
               }
-              className="flex-1 p-2 border rounded"
+              className="flex-1 p-2 border rounded text-black"
               disabled={!classSubjects.length}
             >
               <option value="">-- Select Subject --</option>

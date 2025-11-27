@@ -5,6 +5,9 @@ from ..core.db import get_db
 from ..core.security import decode_access_token
 from ..services.user_service import get_user
 from ..schemas.user import TokenData
+import logging
+
+logger = logging.getLogger(__name__)
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/api/auth/login")
 

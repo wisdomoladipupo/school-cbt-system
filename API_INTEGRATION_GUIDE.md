@@ -196,6 +196,7 @@ app.add_middleware(
 curl -X POST http://localhost:8000/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email": "admin@school.local", "password": "adminpass"}'
+   -d '{"email": "admin@example.com", "password": "adminpass"}'
 ```
 
 ### Test Create User

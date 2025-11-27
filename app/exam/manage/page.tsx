@@ -2,14 +2,21 @@
 
 import { useEffect, useState } from "react";
 import DashboardLayout from "../../dashboard/layout";
-import { getAllExams, deleteExam } from "../../../lib/db";
+import { examsAPI } from "@/lib/api/api"; // import updated examsAPI
+import { getStoredToken } from "@/lib/api";
 
 export default function ManageExamsPage() {
   const [exams, setExams] = useState<any[]>([]);
+  const token = getStoredToken(); // get the stored JWT token
 
   const loadExams = async () => {
-    const all = await getAllExams();
-    setExams(all);
+    if (!token) return;
+    try {
+      const allExams = await examsAPI.listAll(token); // use listAll for admin
+      setExams(allExams);
+    } catch (err) {
+      console.error("Failed to load exams:", err);
+    }
   };
 
   useEffect(() => {
@@ -17,8 +24,13 @@ export default function ManageExamsPage() {
   }, []);
 
   const handleDelete = async (id: number) => {
-    await deleteExam(id);
-    loadExams();
+    if (!token) return;
+    try {
+      await examsAPI.delete(id, token);
+      loadExams();
+    } catch (err) {
+      console.error("Failed to delete exam:", err);
+    }
   };
 
   return (
@@ -28,7 +40,10 @@ export default function ManageExamsPage() {
 
       <ul className="space-y-4">
         {exams.map((exam) => (
-          <li key={exam.id} className="p-4 border rounded-md flex justify-between items-center">
+          <li
+            key={exam.id}
+            className="p-4 border rounded-md flex justify-between items-center"
+          >
             <span>{exam.title}</span>
             <button
               onClick={() => handleDelete(exam.id)}

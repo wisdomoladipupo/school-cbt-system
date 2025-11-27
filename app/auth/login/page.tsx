@@ -3,7 +3,8 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authAPI, setStoredAuth, getStoredUser } from "../../../lib/api";
+import { authAPI,  } from "../../../lib/api/api";
+import { setStoredAuth, getStoredUser } from "../../../lib/api";
 
 // Helper to decode JWT
 const decodeJWT = (token: string) => {
@@ -43,7 +44,12 @@ export default function LoginPage() {
     setError("");
 
     try {
-      const response = await authAPI.login({ email, password });
+      const cleanEmail = email.trim();
+      const cleanPassword = password; // do not trim password automatically
+      const response = await authAPI.login({
+        email: cleanEmail,
+        password: cleanPassword,
+      });
 
       // Decode JWT to get user info including role
       const decoded = decodeJWT(response.access_token);
@@ -115,7 +121,7 @@ export default function LoginPage() {
         </form>
 
         <p className="mt-4 text-center text-gray-600 dark:text-gray-300">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link
             href="/auth/register"
             className="text-indigo-600 hover:underline"

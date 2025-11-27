@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { classesAPI, usersAPI, getStoredToken } from "@/lib/api";
+import { getStoredToken } from "@/lib/api";
+import {  classesAPI, usersAPI, }  from '@/lib/api/api'
 import type { User, Class } from "@/lib/api";
 
 export default function TeacherClassManagement() {

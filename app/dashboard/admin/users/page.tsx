@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { usersAPI, classesAPI, User, Class } from "@/lib/api";
+import { usersAPI, classesAPI,} from "@/lib/api/api";
+import { User, Class } from "@/lib/api";
 
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -74,54 +75,69 @@ export default function ManageUsersPage() {
   }, [token, fetchUsers, fetchClasses]);
 
   const handleAddUser = async () => {
-    if (!form.full_name || !form.email || !form.password) {
-      setErrorMsg("Please fill in all fields");
-      return;
-    }
+  if (!form.full_name || !form.email || !form.password) {
+    setErrorMsg("Please fill in all fields");
+    return;
+  }
 
-    try {
-      setIsSubmitting(true);
-      const newUser = await usersAPI.create(
-        {
-          full_name: form.full_name,
-          email: form.email,
-          password: form.password,
-          role: form.role,
-        },
-        token
-      );
+  try {
+    setIsSubmitting(true);
 
-      // If student and class is selected, assign to class
-      if (form.role === "student" && form.class_id) {
-        try {
-          await classesAPI.assignStudentToClass(
-            parseInt(form.class_id),
-            newUser.id,
-            token
-          );
-        } catch (err) {
-          console.error("Failed to assign student to class:", err);
-          // Don't fail the user creation if class assignment fails
-        }
+    // Build payload
+    const payload: {
+      full_name: string;
+      email: string;
+      password: string;
+      role: "student" | "teacher" | "admin";
+      student_class?: string;
+    } = {
+      full_name: form.full_name.trim(),
+      email: form.email.trim(),
+      password: form.password,
+      role: form.role.toLowerCase() as "student" | "teacher" | "admin",
+    };
+
+    // Only send student_class if role is student
+    if (payload.role === "student" && form.class_id) {
+      const selectedClass = classes.find((c) => c.id === parseInt(form.class_id));
+      if (selectedClass) {
+        payload.student_class = selectedClass.name;
       }
-
-      setUsers([...users, newUser]);
-      setForm({
-        full_name: "",
-        email: "",
-        password: "",
-        role: "student",
-        class_id: "",
-      });
-      setShowModal(false);
-      setErrorMsg("");
-    } catch (err) {
-      console.error("Failed to add user:", err);
-      setErrorMsg(err instanceof Error ? err.message : "Failed to add user");
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    const newUser = await usersAPI.create(payload, token);
+
+    // Assign to class if student
+    if (payload.role === "student" && form.class_id) {
+      try {
+        await classesAPI.assignStudentToClass(
+          parseInt(form.class_id),
+          newUser.id,
+          token
+        );
+      } catch (err) {
+        console.error("Failed to assign student to class:", err);
+      }
+    }
+
+    setUsers([...users, newUser]);
+    setForm({
+      full_name: "",
+      email: "",
+      password: "",
+      role: "student",
+      class_id: "",
+    });
+    setShowModal(false);
+    setErrorMsg("");
+  } catch (err) {
+    console.error("Failed to add user:", err);
+    setErrorMsg(err instanceof Error ? err.message : "Failed to add user");
+  } finally {
+    setIsSubmitting(false);
+  }
+};
+
 
   const handleEditUser = (user: User) => {
     setEditingUserId(user.id);

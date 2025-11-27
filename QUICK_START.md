@@ -63,6 +63,7 @@ npm run dev
 After backend initialization:
 
 - **Email:** admin@school.local
+- **Email:** admin@example.com
 - **Password:** adminpass
 - **Role:** admin
 
@@ -72,7 +73,7 @@ After backend initialization:
 
 ```
 URL: http://localhost:3000/auth/login
-Email: admin@school.local
+Email: admin@example.com
 Password: adminpass
 ```
 

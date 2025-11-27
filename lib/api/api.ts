@@ -1,152 +1,26 @@
 // lib/api.ts
 // API Client for School CBT System
 
+import type {
+  LoginCredentials,
+  RegisterPayload,
+  TokenResponse,
+  User,
+  ExamCreate,
+  Exam,
+  QuestionCreate,
+  Question,
+  ResultSubmit,
+  Result,
+  Class,
+  ClassWithSubjects,
+  Subject,
+  SchoolLevel
+} from "./types";
+
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-
-// ============================================
-// TYPES
-// ============================================
-
-export interface LoginCredentials {
-  email: string;
-  password: string;
-}
-
-export interface RegisterPayload {
-  full_name: string;
-  email: string;
-  password: string;
-  role?: "admin" | "teacher" | "student";
-  student_class?: string;
-}
-
-export interface User {
-  id: number;
-  full_name: string;
-  email: string;
-  role: "admin" | "teacher" | "student";
-  student_class?: string;
-  registration_number?: string;
-}
-
-export interface ExamCreate {
-  title: string;
-  description?: string;
-  duration_minutes?: number;
-  published?: boolean;
-  class_id?: number;
-  subject_id?: number;
-}
-
-export interface Exam {
-  id: number;
-  title: string;
-  description?: string;
-  duration_minutes: number;
-  published: boolean;
-  created_by: number;
-  class_id?: number;
-  subject_id?: number;
-}
-
-export interface QuestionCreate {
-  exam_id?: number;
-  text: string;
-  options: string[];
-  correct_answer: number;
-  marks?: number;
-  image_url?: string;
-}
-
-export interface Question {
-  id: number;
-  exam_id?: number;
-  text: string;
-  options: string[];
-  marks: number;
-  image_url?: string;
-}
-
-export interface AnswerItem {
-  question_id: number;
-  answer_index: number;
-}
-
-export interface ResultSubmit {
-  exam_id: number;
-  answers: AnswerItem[];
-}
-
-export interface Result {
-  id: number;
-  student_id: number;
-  exam_id: number;
-  answers: AnswerItem[];
-  score: number;
-  max_score: number;
-}
-
-export interface Subject {
-  id: number;
-  name: string;
-  code: string;
-  description?: string;
-}
-
-export interface Class {
-  id: number;
-  name: string;
-  level: string;
-}
-
-export interface ClassWithSubjects extends Class {
-  subjects: Subject[];
-  students?: User[];
-  teachers?: User[];
-}
-
-export interface ClassAssignment {
-  student_id?: number;
-  teacher_id?: number;
-  class_id: number;
-  subjects_assigned?: number;
-  exams_created?: number;
-  message?: string;
-}
-
-export interface TeacherSubjectAssignment {
-  id?: number;
-  teacher_id: number;
-  subject_id: number;
-  class_id: number;
-  teacher_name?: string;
-  teacher_email?: string;
-  message?: string;
-}
-
-export interface SubjectWithTeachers {
-  subject_id: number;
-  subject_name: string;
-  subject_code: string;
-  teachers: Array<{
-    id: number;
-    teacher_id: number;
-    teacher_name: string;
-    teacher_email: string;
-  }>;
-}
-
-export interface ClassMember {
-  id: number;
-  full_name: string;
-  email: string;
-  role: string;
-}
-
-export interface TokenResponse {
-  access_token: string;
-  token_type: string;
-}
+import { getStoredToken } from "./token";
 
 // ============================================
 // AUTH API
@@ -176,8 +50,31 @@ export const authAPI = {
     });
 
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Login failed");
+      // Try to extract JSON detail, fallback to text
+      let body: unknown = null;
+      try {
+        body = await response.json();
+      } catch {
+        try {
+          body = await response.text();
+        } catch {
+          body = null;
+        }
+      }
+
+      const bodyObj =
+        typeof body === "object" && body !== null
+          ? (body as Record<string, unknown>)
+          : null;
+      const detail = bodyObj ? bodyObj["detail"] ?? bodyObj["message"] : body;
+      const message =
+        typeof detail === "string"
+          ? detail
+          : body
+          ? JSON.stringify(body)
+          : `Login failed (status ${response.status})`;
+
+      throw new Error(message);
     }
 
     return response.json();
@@ -190,14 +87,15 @@ export const authAPI = {
 
 export const usersAPI = {
   create: async (payload: RegisterPayload, token: string): Promise<User> => {
-    const response = await fetch(`${API_BASE_URL}/api/users`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(payload),
-    });
+    const response = await fetch(`${API_BASE_URL}/api/users/`, { // note trailing slash
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+    Authorization: `Bearer ${token}`,
+  },
+  body: JSON.stringify(payload),
+});
+
 
     if (!response.ok) {
       const error = await response.json();
@@ -209,7 +107,7 @@ export const usersAPI = {
 
   list: async (token: string): Promise<User[]> => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/users`, {
+      const response = await fetch(`${API_BASE_URL}/api/users/`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
@@ -316,14 +214,14 @@ export const usersAPI = {
     }
   },
 };
-
-// ============================================
+// ==// ============================================
 // EXAMS API
 // ============================================
 
 export const examsAPI = {
+  // Create a new exam (teacher only)
   create: async (payload: ExamCreate, token: string): Promise<Exam> => {
-    const response = await fetch(`${API_BASE_URL}/api/exams`, {
+    const response = await fetch(`${API_BASE_URL}/api/exams/`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -340,41 +238,66 @@ export const examsAPI = {
     return response.json();
   },
 
-  list: async (): Promise<Exam[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/exams`, {
+  // Fetch exams visible to the current user (requires token)
+  list: async (token: string): Promise<Exam[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/exams/`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch exams");
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch exams");
     }
 
     return response.json();
   },
 
-  getById: async (examId: number): Promise<Exam> => {
+  // Admin-only: fetch all exams (ignores published status)
+  listAll: async (token: string): Promise<Exam[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/exams/all`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch all exams");
+    }
+
+    return response.json();
+  },
+
+  // Get a single exam by ID (token optional if public)
+  getById: async (examId: number, token?: string): Promise<Exam> => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+
     const response = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" },
+      headers,
     });
 
     if (!response.ok) {
-      throw new Error("Failed to fetch exam");
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch exam");
     }
 
     return response.json();
   },
 
+  // Import questions from document (teacher only)
   importFromDocument: async (
     examId: number,
     file: File,
     token: string
-  ): Promise<{
-    success: boolean;
-    questions_imported: number;
-    exam_id: number;
-  }> => {
+  ): Promise<{ success: boolean; questions_imported: number; exam_id: number }> => {
     const formData = new FormData();
     formData.append("file", file);
 
@@ -392,6 +315,21 @@ export const examsAPI = {
     if (!response.ok) {
       const error = await response.json();
       throw new Error(error.detail || "Document import failed");
+    }
+
+    return response.json();
+  },
+
+  // Delete an exam (teacher/admin only)
+  delete: async (examId: number, token: string) => {
+    const response = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to delete exam");
     }
 
     return response.json();
@@ -531,10 +469,7 @@ export const classesAPI = {
       headers: { "Content-Type": "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch school levels");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch school levels");
     return response.json();
   },
 
@@ -544,10 +479,7 @@ export const classesAPI = {
       headers: { "Content-Type": "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch classes");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch classes");
     return response.json();
   },
 
@@ -557,10 +489,7 @@ export const classesAPI = {
       headers: { "Content-Type": "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch class");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch class");
     return response.json();
   },
 
@@ -570,17 +499,14 @@ export const classesAPI = {
       headers: { "Content-Type": "application/json" },
     });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch classes by level");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch classes by level");
     return response.json();
   },
 
-  createClass: async (
-    data: { name: string; level: string },
-    token: string
-  ): Promise<Class> => {
+  // ------------------
+  //   CREATE CLASS
+  // ------------------
+  createClass: async (data: { name: string; level: string }, token: string): Promise<Class> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
       method: "POST",
       headers: {
@@ -598,85 +524,40 @@ export const classesAPI = {
     return response.json();
   },
 
-  assignStudentToClass: async (
-    classId: number,
-    studentId: number,
-    token: string
-  ): Promise<ClassAssignment> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/assign-student`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ student_id: studentId, class_id: classId }),
-      }
-    );
-
-    if (!response.ok) {
-      // Try to parse JSON error body, but handle non-string details safely
-      let errBody: unknown = null;
-      try {
-        errBody = await response.json();
-      } catch {
-        const text = await response.text();
-        throw new Error(text || "Failed to assign student to class");
-      }
-
-      const eb = errBody as Record<string, unknown> | null;
-      const detail: unknown = eb?.detail ?? eb?.message ?? errBody;
-      const message =
-        typeof detail === "string" ? detail : JSON.stringify(detail);
-      throw new Error(message || "Failed to assign student to class");
-    }
-
-    // Successful response - parse JSON
-    return response.json();
-  },
-
-  assignTeacherToClass: async (
-    classId: number,
-    teacherId: number,
-    token: string
-  ): Promise<ClassAssignment> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/assign-teacher`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ teacher_id: teacherId }),
-      }
-    );
+  // ------------------
+  //   UPDATE CLASS
+  // ------------------
+  updateClass: async (classId: number, data: { name: string; level: string }, token: string): Promise<Class> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+    });
 
     if (!response.ok) {
       const error = await response.json();
-      throw new Error(error.detail || "Failed to assign teacher to class");
+      throw new Error(error.detail || "Failed to update class");
     }
 
     return response.json();
   },
 
-  updateClassSubjects: async (
-    classId: number,
-    subjectIds: number[],
-    token: string
-  ): Promise<ClassWithSubjects> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/subjects`,
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify(subjectIds),
-      }
-    );
+  // ------------------
+  //   SUBJECT UPDATES
+  // ------------------
+
+  updateClassSubjects: async (classId: number, subjectIds: number[], token: string): Promise<ClassWithSubjects> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(subjectIds),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -686,21 +567,14 @@ export const classesAPI = {
     return response.json();
   },
 
-  addSubjectToClass: async (
-    classId: number,
-    subjectId: number,
-    token: string
-  ): Promise<ClassWithSubjects> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  addSubjectToClass: async (classId: number, subjectId: number, token: string): Promise<ClassWithSubjects> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -710,20 +584,11 @@ export const classesAPI = {
     return response.json();
   },
 
-  removeSubjectFromClass: async (
-    classId: number,
-    subjectId: number,
-    token: string
-  ): Promise<ClassWithSubjects> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      }
-    );
+  removeSubjectFromClass: async (classId: number, subjectId: number, token: string): Promise<ClassWithSubjects> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -732,143 +597,51 @@ export const classesAPI = {
 
     return response.json();
   },
-
-  getClassStudents: async (classId: number): Promise<ClassMember[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/students`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch class students");
-    }
-
-    return response.json();
-  },
-
-  getClassTeachers: async (classId: number): Promise<ClassMember[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/teachers`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch class teachers");
-    }
-
-    return response.json();
-  },
+  assignStudentToClass: async (classId: number, studentId: number, token: string): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/assign-student`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ student_id: studentId, class_id: classId }),
+  });
+  if (!response.ok) throw new Error("Failed to assign student to class");
+  return response.json();
+},
 
   listSubjects: async (): Promise<Subject[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes/subjects`, {
       method: "GET",
       headers: { "Content-Type": "application/json" },
     });
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch subjects");
-    }
-
+    if (!response.ok) throw new Error("Failed to fetch subjects");
     return response.json();
   },
 
-  assignTeacherToSubject: async (
-    classId: number,
-    teacherId: number,
-    subjectId: number,
-    token: string
-  ): Promise<ClassAssignment> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/assign-teacher-to-subject`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          teacher_id: teacherId,
-          subject_id: subjectId,
-          class_id: classId,
-        }),
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to assign teacher to subject");
-    }
-
+  getClassSubjectsWithTeachers: async (classId: number): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects-with-teachers`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch subjects with teachers");
     return response.json();
   },
 
-  getClassSubjectsWithTeachers: async (
-    classId: number
-  ): Promise<SubjectWithTeachers[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/${classId}/subjects-with-teachers`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+ assignTeacherToSubject: async (classId: number, teacherId: number, subjectId: number, token: string): Promise<any> => {
+  const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/assign-teacher-to-subject`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({
+      teacher_id: teacherId,
+      subject_id: subjectId,
+      class_id: classId, // include this
+    }),
+  });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch subjects with teachers");
-    }
-
-    return response.json();
-  },
-
-  getSubjectTeachers: async (
-    subjectId: number,
-    classId: number
-  ): Promise<TeacherSubjectAssignment[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/classes/subject/${subjectId}/teachers?class_id=${classId}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch subject teachers");
-    }
-
-    return response.json();
-  },
-};
-
-// ============================================
-// UTILITY FUNCTIONS
-// ============================================
-
-export const getStoredToken = (): string | null => {
-  if (typeof window === "undefined") return null;
-  return localStorage.getItem("access_token");
-};
-
-export const getStoredUser = (): User | null => {
-  if (typeof window === "undefined") return null;
-  const user = localStorage.getItem("currentUser");
-  return user ? JSON.parse(user) : null;
-};
-
-export const setStoredAuth = (token: string, user: User): void => {
-  if (typeof window === "undefined") return;
-  localStorage.setItem("access_token", token);
-  localStorage.setItem("currentUser", JSON.stringify(user));
-};
-
-export const clearStoredAuth = (): void => {
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("access_token");
-  localStorage.removeItem("currentUser");
-};
+  if (!response.ok) throw new Error("Failed to assign teacher to subject");
+  return response.json();
+}};

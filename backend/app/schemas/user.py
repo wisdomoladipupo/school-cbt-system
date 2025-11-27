@@ -9,15 +9,17 @@ class UserCreate(BaseModel):
     student_class: Optional[str] = None
 
 class LoginRequest(BaseModel):
-    email: EmailStr
+    email: str  # Use plain str instead of EmailStr to accept a wider range of email formats
     password: str
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: int
     full_name: str
-    email: EmailStr
+    # Use a plain string here to avoid strict EmailStr validation on existing
+    # or special-use addresses (e.g. admin@school.local) when serializing users.
+    email: str
     role: str
     student_class: Optional[str]
     registration_number: Optional[str]

@@ -2,180 +2,100 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { classesAPI, getStoredToken, type SchoolLevel } from "@/lib/api";
-
-// School subjects mapping for display
-const SCHOOL_SUBJECTS: Record<string, string[]> = {
-  NUR1: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  NUR2: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  NUR3: ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],
-  PRY1: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  PRY2: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  PRY3: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  PRY4: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  PRY5: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  PRY6: [
-    "English Language",
-    "Mathematics",
-    "Science",
-    "Social Studies",
-    "Physical Education",
-    "Music",
-    "Art and Craft",
-  ],
-  JSS1: [
-    "English Language",
-    "Mathematics",
-    "Integrated Science",
-    "Social Studies",
-    "Civic Education",
-    "Computer Science",
-    "Physical Education",
-    "Music",
-    "Visual Arts",
-  ],
-  JSS2: [
-    "English Language",
-    "Mathematics",
-    "Integrated Science",
-    "Social Studies",
-    "Civic Education",
-    "Computer Science",
-    "Physical Education",
-    "Music",
-    "Visual Arts",
-  ],
-  JSS3: [
-    "English Language",
-    "Mathematics",
-    "Integrated Science",
-    "Social Studies",
-    "Civic Education",
-    "Computer Science",
-    "Physical Education",
-    "Music",
-    "Visual Arts",
-  ],
-  SS1: [
-    "English Language",
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "History",
-    "Government",
-    "Economics",
-    "Literature in English",
-    "Computer Science",
-    "Physical Education",
-    "Technical Drawing",
-  ],
-  SS2: [
-    "English Language",
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "History",
-    "Government",
-    "Economics",
-    "Literature in English",
-    "Computer Science",
-    "Physical Education",
-    "Technical Drawing",
-  ],
-  SS3: [
-    "English Language",
-    "Mathematics",
-    "Physics",
-    "Chemistry",
-    "Biology",
-    "History",
-    "Government",
-    "Economics",
-    "Literature in English",
-    "Computer Science",
-    "Physical Education",
-    "Technical Drawing",
-  ],
-};
-
+import {
+  getStoredToken,
+} from "@/lib/api/token";
+import { classesAPI } from "@/lib/api/api";
+import type { SchoolLevel, Subject } from "@/lib/api";
 export default function CreateClassPage() {
   const router = useRouter();
+  const token = getStoredToken();
+
   const [schoolLevels, setSchoolLevels] = useState<SchoolLevel[]>([]);
   const [selectedLevel, setSelectedLevel] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [derivedClassName, setDerivedClassName] = useState("");
   const [loadingLevels, setLoadingLevels] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
-  const token = getStoredToken();
-  const derivedClassName =
-    schoolLevels.find((l) => l.code === selectedLevel)?.display_name ||
-    selectedLevel;
 
+  const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [subjects, setSubjects] = useState<string[]>([]);
+  const [newSubject, setNewSubject] = useState("");
+
+  // Fetch school levels
   useEffect(() => {
     const fetchLevels = async () => {
       try {
         const levels = await classesAPI.getSchoolLevels();
         setSchoolLevels(levels);
-        if (levels.length > 0) {
-          setSelectedLevel(levels[0].code);
-        }
+        if (levels.length > 0) setSelectedLevel(levels[0].code);
       } catch (err) {
         setError(
-          `Failed to load school levels: ${
-            err instanceof Error ? err.message : "Unknown error"
-          }`
+          `Failed to load school levels: ${err instanceof Error ? err.message : "Unknown error"}`
         );
       } finally {
         setLoadingLevels(false);
       }
     };
-
     fetchLevels();
   }, []);
 
-  const handleCreateClass = async (e: React.FormEvent) => {
+  // Update derived class name when selected level changes
+  useEffect(() => {
+    const name =
+      schoolLevels.find((l) => l.code === selectedLevel)?.display_name || selectedLevel;
+    setDerivedClassName(name);
+  }, [selectedLevel, schoolLevels]);
+
+  // Fetch all subjects globally
+  useEffect(() => {
+    const fetchAllSubjects = async () => {
+      try {
+        const subjectsList = await classesAPI.listSubjects();
+        setAllSubjects(subjectsList);
+      } catch (err) {
+        console.error("Failed to load subjects", err);
+      }
+    };
+    fetchAllSubjects();
+  }, []);
+
+  // Fetch existing class subjects if class exists
+  useEffect(() => {
+    const fetchClassSubjects = async () => {
+      try {
+        // First, get all classes for this level
+        const classes = await classesAPI.getClassesByLevel(selectedLevel);
+        const existingClass = classes.find(c => c.name === derivedClassName);
+
+        if (existingClass) {
+          const classWithSubjects = await classesAPI.getClass(existingClass.id);
+          setSubjects(classWithSubjects.subjects.map(s => s.name));
+        } else {
+          setSubjects([]);
+        }
+      } catch (err) {
+        console.error("Failed to load class subjects", err);
+      }
+    };
+
+    if (selectedLevel && derivedClassName) fetchClassSubjects();
+  }, [selectedLevel, derivedClassName]);
+
+  const addCustomSubject = () => {
+    if (!newSubject.trim()) return;
+    if (!subjects.includes(newSubject.trim())) {
+      setSubjects([...subjects, newSubject.trim()]);
+      setNewSubject("");
+    }
+  };
+
+  const removeSubject = (subj: string) => {
+    setSubjects(subjects.filter((s) => s !== subj));
+  };
+
+  const handleCreateOrUpdateClass = async (e: React.FormEvent) => {
     e.preventDefault();
     setMessage("");
     setError("");
@@ -192,25 +112,39 @@ export default function CreateClassPage() {
 
     setLoading(true);
     try {
-      const nameToCreate = derivedClassName || selectedLevel;
-      await classesAPI.createClass(
-        {
-          name: nameToCreate,
-          level: selectedLevel,
-        },
-        token
-      );
+      // First, check if class already exists
+      const classes = await classesAPI.getClassesByLevel(selectedLevel);
+      const existingClass = classes.find(c => c.name === derivedClassName);
 
-      setMessage(
-        `✓ Class "${nameToCreate}" created successfully! You can create another class or go to class management.`
-      );
-      setSelectedLevel(schoolLevels[0]?.code || "");
+      let classId: number;
+
+      if (existingClass) {
+        // Update existing class
+        await classesAPI.updateClassSubjects(
+          existingClass.id,
+          allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id),
+          token
+        );
+        classId = existingClass.id;
+      } else {
+        // Create new class
+        const newClass = await classesAPI.createClass(
+          { name: derivedClassName, level: selectedLevel },
+          token
+        );
+        classId = newClass.id;
+
+        // Update subjects for the new class
+        const subjectIds = allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id);
+        if (subjectIds.length > 0) {
+          await classesAPI.updateClassSubjects(classId, subjectIds, token);
+        }
+      }
+
+      setMessage(`✓ Class "${derivedClassName}" saved successfully with subjects!`);
+      setSubjects([]);
     } catch (err) {
-      setError(
-        `Failed to create class: ${
-          err instanceof Error ? err.message : "Unknown error"
-        }`
-      );
+      setError(err instanceof Error ? err.message : "Unknown error");
     } finally {
       setLoading(false);
     }
@@ -228,7 +162,7 @@ export default function CreateClassPage() {
     <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-500 to-purple-600 p-4">
       <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
         <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
-          Create New Class
+          Create / Update Class
         </h1>
 
         {message && (
@@ -236,14 +170,13 @@ export default function CreateClassPage() {
             {message}
           </div>
         )}
-
         {error && (
           <div className="mb-4 p-4 bg-red-100 text-red-700 rounded-lg border border-red-300">
             {error}
           </div>
         )}
 
-        <form onSubmit={handleCreateClass} className="space-y-4">
+        <form onSubmit={handleCreateOrUpdateClass} className="space-y-4">
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">
               School Level
@@ -260,39 +193,53 @@ export default function CreateClassPage() {
                 </option>
               ))}
             </select>
-            <p className="text-xs text-gray-500 mt-2">
-              Subjects will be automatically assigned based on the selected
-              level
-            </p>
           </div>
-
-          {/* Display subjects for selected level */}
-          {selectedLevel && SCHOOL_SUBJECTS[selectedLevel] && (
-            <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm font-semibold text-blue-900 mb-2">
-                Subjects for this class:
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {SCHOOL_SUBJECTS[selectedLevel].map((subject, idx) => (
-                  <span
-                    key={idx}
-                    className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded"
-                  >
-                    {subject}
-                  </span>
-                ))}
-              </div>
-            </div>
-          )}
 
           <div>
             <p className="text-sm text-gray-700 mb-2">Class Name</p>
             <div className="w-full p-3 border-2 border-gray-200 rounded-lg bg-gray-50 text-gray-700">
               {derivedClassName || "(select a level to see class name)"}
             </div>
-            <p className="text-xs text-gray-500 mt-2">
-              Class name is auto-generated from the selected level
+          </div>
+
+          {/* Subjects Management */}
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-semibold text-blue-900 mb-2">
+              Subjects for this class:
             </p>
+            <div className="flex flex-wrap gap-2 mb-2">
+              {subjects.map((subject, idx) => (
+                <span
+                  key={idx}
+                  className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1"
+                >
+                  {subject}
+                  <button
+                    type="button"
+                    onClick={() => removeSubject(subject)}
+                    className="text-red-600 font-bold"
+                  >
+                    ×
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="Add custom subject"
+                className="flex-1 p-2 border rounded"
+              />
+              <button
+                type="button"
+                onClick={addCustomSubject}
+                className="bg-green-600 text-white px-3 rounded"
+              >
+                Add
+              </button>
+            </div>
           </div>
 
           <button
@@ -300,7 +247,7 @@ export default function CreateClassPage() {
             disabled={loading}
             className="w-full mt-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
           >
-            {loading ? "Creating..." : "Create Class"}
+            {loading ? "Saving..." : "Save Class"}
           </button>
 
           <div className="flex gap-3">
@@ -320,18 +267,6 @@ export default function CreateClassPage() {
             </button>
           </div>
         </form>
-
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-          <h3 className="font-semibold text-blue-900 mb-2">
-            Available Levels:
-          </h3>
-          <div className="text-sm text-blue-800">
-            <p>• Nursery: NUR1, NUR2, NUR3</p>
-            <p>• Primary: PRY1 - PRY6</p>
-            <p>• JSS: JSS1, JSS2, JSS3</p>
-            <p>• SS: SS1, SS2, SS3</p>
-          </div>
-        </div>
       </div>
     </div>
   );
