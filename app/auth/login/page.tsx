@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { authAPI,  } from "../../../lib/api/api";
+import { authAPI } from "../../../lib/api/api";
 import { setStoredAuth, getStoredUser } from "../../../lib/api";
 
 // Helper to decode JWT
@@ -84,7 +84,9 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
-            <label className="block mb-1 font-semibold">Email or Registration Number</label>
+            <label className="block mb-1 font-semibold">
+              Email or Registration Number
+            </label>
             <input
               type="text"
               placeholder="Email or NG/EEV/1234A"
@@ -93,7 +95,10 @@ export default function LoginPage() {
               onChange={(e) => setEmail(e.target.value)}
               required
             />
-            <p className="text-xs text-gray-500 mt-1">Students should login using their registration number (e.g. NG/EEV/1234A).</p>
+            <p className="text-xs text-gray-500 mt-1">
+              Students should login using their registration number (e.g.
+              NG/EEV/1234A).
+            </p>
           </div>
 
           <div className="relative">

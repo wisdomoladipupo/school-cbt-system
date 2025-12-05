@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { usersAPI, classesAPI,} from "@/lib/api/api";
+import { usersAPI, classesAPI } from "@/lib/api/api";
 import { User, Class } from "@/lib/api";
 
 type DetailsEditFormProps = {
@@ -12,11 +12,21 @@ type DetailsEditFormProps = {
   onSave: (updatedUser: User, classId?: number | null) => void;
 };
 
-function DetailsEditForm({ user, classes, token, onCancel, onSave }: DetailsEditFormProps) {
+function DetailsEditForm({
+  user,
+  classes,
+  token,
+  onCancel,
+  onSave,
+}: DetailsEditFormProps) {
   const [fullName, setFullName] = useState(user.full_name);
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState(user.role as "admin" | "teacher" | "student");
-  const [passport, setPassport] = useState<string | null>(user.passport || null);
+  const [role, setRole] = useState(
+    user.role as "admin" | "teacher" | "student"
+  );
+  const [passport, setPassport] = useState<string | null>(
+    user.passport || null
+  );
   const [classId, setClassId] = useState<number | null>(user.class_id || null);
   const [submitting, setSubmitting] = useState(false);
 
@@ -41,42 +51,81 @@ function DetailsEditForm({ user, classes, token, onCancel, onSave }: DetailsEdit
   return (
     <div className="space-y-3">
       <label className="block text-sm font-medium">Full name</label>
-      <input className="w-full border p-2 rounded" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+      <input
+        className="w-full border p-2 rounded"
+        value={fullName}
+        onChange={(e) => setFullName(e.target.value)}
+      />
 
-      <label className="block text-sm font-medium">Password (leave empty to keep)</label>
-      <input type="password" className="w-full border p-2 rounded" value={password} onChange={(e) => setPassword(e.target.value)} />
+      <label className="block text-sm font-medium">
+        Password (leave empty to keep)
+      </label>
+      <input
+        type="password"
+        className="w-full border p-2 rounded"
+        value={password}
+        onChange={(e) => setPassword(e.target.value)}
+      />
 
       <label className="block text-sm font-medium">Role</label>
-      <select className="w-full border p-2 rounded" value={role} onChange={(e) => setRole(e.target.value as any)}>
+      <select
+        className="w-full border p-2 rounded"
+        value={role}
+        onChange={(e) => setRole(e.target.value as any)}
+      >
         <option value="student">Student</option>
         <option value="teacher">Teacher</option>
         <option value="admin">Admin</option>
       </select>
 
       <label className="block text-sm font-medium">Passport Photo</label>
-      <input type="file" accept="image/*" onChange={(e) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        const reader = new FileReader();
-        reader.onload = () => setPassport(reader.result as string);
-        reader.readAsDataURL(file);
-      }} />
+      <input
+        type="file"
+        accept="image/*"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => setPassport(reader.result as string);
+          reader.readAsDataURL(file);
+        }}
+      />
 
       {role === "student" && (
         <>
           <label className="block text-sm font-medium">Class</label>
-          <select className="w-full border p-2 rounded" value={classId ?? ""} onChange={(e) => setClassId(e.target.value ? parseInt(e.target.value) : null)}>
+          <select
+            className="w-full border p-2 rounded"
+            value={classId ?? ""}
+            onChange={(e) =>
+              setClassId(e.target.value ? parseInt(e.target.value) : null)
+            }
+          >
             <option value="">(none)</option>
             {classes.map((c) => (
-              <option key={c.id} value={c.id}>{c.name} ({c.level})</option>
+              <option key={c.id} value={c.id}>
+                {c.name} ({c.level})
+              </option>
             ))}
           </select>
         </>
       )}
 
       <div className="flex justify-end gap-2">
-        <button className="px-3 py-1 bg-gray-300 rounded" onClick={onCancel} disabled={submitting}>Cancel</button>
-        <button className="px-3 py-1 bg-blue-600 text-white rounded" onClick={handleSave} disabled={submitting}>{submitting ? 'Saving...' : 'Save'}</button>
+        <button
+          className="px-3 py-1 bg-gray-300 rounded"
+          onClick={onCancel}
+          disabled={submitting}
+        >
+          Cancel
+        </button>
+        <button
+          className="px-3 py-1 bg-blue-600 text-white rounded"
+          onClick={handleSave}
+          disabled={submitting}
+        >
+          {submitting ? "Saving..." : "Save"}
+        </button>
       </div>
     </div>
   );
@@ -95,7 +144,9 @@ export default function ManageUsersPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState<string>("");
   const [backendHealth, setBackendHealth] = useState<string | null>(null);
-  const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+  const API_BASE_URL = (
+    process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  ).replace(/\/$/, "");
 
   const [form, setForm] = useState({
     full_name: "",
@@ -161,79 +212,80 @@ export default function ManageUsersPage() {
   }, [token, fetchUsers, fetchClasses]);
 
   const handleAddUser = async () => {
-  if (!form.full_name || !form.email || !form.password) {
-    setErrorMsg("Please fill in all fields");
-    return;
-  }
-
-  // Validate: students must be assigned to a class
-  if (form.role === "student" && !form.class_id) {
-    setErrorMsg("Students must be assigned to a class");
-    return;
-  }
-
-  try {
-    setIsSubmitting(true);
-
-    // Build payload
-    const payload: {
-      full_name: string;
-      email: string;
-      password: string;
-      role: "student" | "teacher" | "admin";
-      student_class?: string;
-    } = {
-      full_name: form.full_name.trim(),
-      email: form.email.trim(),
-      password: form.password,
-      role: form.role.toLowerCase() as "student" | "teacher" | "admin",
-    };
-
-    // Only send student_class if role is student
-    if (payload.role === "student" && form.class_id) {
-      const selectedClass = classes.find((c) => c.id === parseInt(form.class_id));
-      if (selectedClass) {
-        payload.student_class = selectedClass.name;
-      }
-    }
-    // include passport if provided
-    if ((form as any).passport) {
-      (payload as any).passport = (form as any).passport;
+    if (!form.full_name || !form.email || !form.password) {
+      setErrorMsg("Please fill in all fields");
+      return;
     }
 
-    const newUser = await usersAPI.create(payload, token);
+    // Validate: students must be assigned to a class
+    if (form.role === "student" && !form.class_id) {
+      setErrorMsg("Students must be assigned to a class");
+      return;
+    }
 
-    // Assign to class if student
-    if (payload.role === "student" && form.class_id) {
-      try {
-        await classesAPI.assignStudentToClass(
-          parseInt(form.class_id),
-          newUser.id,
-          token
+    try {
+      setIsSubmitting(true);
+
+      // Build payload
+      const payload: {
+        full_name: string;
+        email: string;
+        password: string;
+        role: "student" | "teacher" | "admin";
+        student_class?: string;
+      } = {
+        full_name: form.full_name.trim(),
+        email: form.email.trim(),
+        password: form.password,
+        role: form.role.toLowerCase() as "student" | "teacher" | "admin",
+      };
+
+      // Only send student_class if role is student
+      if (payload.role === "student" && form.class_id) {
+        const selectedClass = classes.find(
+          (c) => c.id === parseInt(form.class_id)
         );
-      } catch (err) {
-        console.error("Failed to assign student to class:", err);
+        if (selectedClass) {
+          payload.student_class = selectedClass.name;
+        }
       }
+      // include passport if provided
+      if ((form as any).passport) {
+        (payload as any).passport = (form as any).passport;
+      }
+
+      const newUser = await usersAPI.create(payload, token);
+
+      // Assign to class if student
+      if (payload.role === "student" && form.class_id) {
+        try {
+          await classesAPI.assignStudentToClass(
+            parseInt(form.class_id),
+            newUser.id,
+            token
+          );
+        } catch (err) {
+          console.error("Failed to assign student to class:", err);
+        }
+      }
+
+      setUsers([...users, newUser]);
+      setForm({
+        full_name: "",
+        email: "",
+        password: "",
+        role: "student",
+        class_id: "",
+      });
+      setShowModal(false);
+      setErrorMsg("");
+    } catch (err) {
+      console.error("Failed to add user:", err);
+      setErrorMsg(err instanceof Error ? err.message : "Failed to add user");
+    } finally {
+      setIsSubmitting(false);
     }
-
-    setUsers([...users, newUser]);
-    setForm({
-      full_name: "",
-      email: "",
-      password: "",
-      role: "student",
-      class_id: "",
-    });
-    setShowModal(false);
-    setErrorMsg("");
-  } catch (err) {
-    console.error("Failed to add user:", err);
-    setErrorMsg(err instanceof Error ? err.message : "Failed to add user");
-  } finally {
-    setIsSubmitting(false);
-  }
-};
-
+  };
 
   const handleEditUser = (user: User) => {
     setEditingUserId(user.id);
@@ -253,11 +305,15 @@ export default function ManageUsersPage() {
 
     try {
       setIsSubmitting(true);
-      const updates: { full_name?: string; password?: string; role?: string; passport?: string } =
-        {
-          full_name: editForm.full_name,
-          role: editForm.role,
-        };
+      const updates: {
+        full_name?: string;
+        password?: string;
+        role?: string;
+        passport?: string;
+      } = {
+        full_name: editForm.full_name,
+        role: editForm.role,
+      };
       if (editForm.password) {
         updates.password = editForm.password;
       }
@@ -340,7 +396,11 @@ export default function ManageUsersPage() {
                   <td className="border p-2 capitalize">{u.role}</td>
                   <td className="border p-2">
                     <button
-                      onClick={() => { setSelectedUser(u); setShowDetailsModal(true); setDetailsEditMode(false); }}
+                      onClick={() => {
+                        setSelectedUser(u);
+                        setShowDetailsModal(true);
+                        setDetailsEditMode(false);
+                      }}
                       className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
                       disabled={isSubmitting}
                     >
@@ -384,20 +444,21 @@ export default function ManageUsersPage() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
 
-                    <div>
-                      <label className="block mb-1 font-semibold">Passport Photo</label>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          const reader = new FileReader();
-                          reader.onload = () => setForm({ ...form, passport: reader.result as string });
-                          reader.readAsDataURL(file);
-                        }}
-                      />
-                    </div>
+            <div>
+              <label className="block mb-1 font-semibold">Passport Photo</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = () =>
+                    setForm({ ...form, passport: reader.result as string });
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </div>
 
             <select
               className="border w-full p-2 mb-3 rounded"
@@ -490,7 +551,11 @@ export default function ManageUsersPage() {
                   const file = e.target.files?.[0];
                   if (!file) return;
                   const reader = new FileReader();
-                  reader.onload = () => setEditForm({ ...editForm, passport: reader.result as string });
+                  reader.onload = () =>
+                    setEditForm({
+                      ...editForm,
+                      passport: reader.result as string,
+                    });
                   reader.readAsDataURL(file);
                 }}
               />
@@ -552,7 +617,11 @@ export default function ManageUsersPage() {
                 )}
                 <button
                   className="px-3 py-1 bg-gray-300 rounded"
-                  onClick={() => { setShowDetailsModal(false); setSelectedUser(null); setDetailsEditMode(false); }}
+                  onClick={() => {
+                    setShowDetailsModal(false);
+                    setSelectedUser(null);
+                    setDetailsEditMode(false);
+                  }}
                 >
                   Close
                 </button>
@@ -562,25 +631,47 @@ export default function ManageUsersPage() {
             {/* Avatar/Passport */}
             <div className="mb-4">
               {selectedUser.passport ? (
-                <img src={selectedUser.passport} alt="passport" className="w-24 h-24 rounded object-cover border" />
+                <img
+                  src={selectedUser.passport}
+                  alt="passport"
+                  className="w-24 h-24 rounded object-cover border"
+                />
               ) : (
-                <div className="w-24 h-24 rounded bg-gray-100 flex items-center justify-center text-xl font-semibold">{selectedUser.full_name?.charAt(0)?.toUpperCase()}</div>
+                <div className="w-24 h-24 rounded bg-gray-100 flex items-center justify-center text-xl font-semibold">
+                  {selectedUser.full_name?.charAt(0)?.toUpperCase()}
+                </div>
               )}
             </div>
 
             {/* Details Form / View */}
             {!detailsEditMode ? (
               <div className="space-y-2">
-                <div><span className="font-semibold">Name: </span>{selectedUser.full_name}</div>
-                <div><span className="font-semibold">Email: </span>{selectedUser.email}</div>
-                <div><span className="font-semibold">Role: </span>{selectedUser.role}</div>
-                <div><span className="font-semibold">Registration #: </span>{selectedUser.registration_number || "(none)"}</div>
-                <div><span className="font-semibold">Class: </span>{selectedUser.student_class || "(none)"}</div>
+                <div>
+                  <span className="font-semibold">Name: </span>
+                  {selectedUser.full_name}
+                </div>
+                <div>
+                  <span className="font-semibold">Email: </span>
+                  {selectedUser.email}
+                </div>
+                <div>
+                  <span className="font-semibold">Role: </span>
+                  {selectedUser.role}
+                </div>
+                <div>
+                  <span className="font-semibold">Registration #: </span>
+                  {selectedUser.registration_number || "(none)"}
+                </div>
+                <div>
+                  <span className="font-semibold">Class: </span>
+                  {selectedUser.student_class || "(none)"}
+                </div>
                 <div className="pt-3">
                   <button
                     className="px-3 py-1 bg-red-500 text-white rounded"
                     onClick={async () => {
-                      if (!window.confirm(`Delete ${selectedUser.full_name}?`)) return;
+                      if (!window.confirm(`Delete ${selectedUser.full_name}?`))
+                        return;
                       try {
                         setIsSubmitting(true);
                         await usersAPI.delete(selectedUser.id, token);
@@ -589,7 +680,11 @@ export default function ManageUsersPage() {
                         setSelectedUser(null);
                         setErrorMsg("");
                       } catch (err) {
-                        setErrorMsg(err instanceof Error ? err.message : "Failed to delete user");
+                        setErrorMsg(
+                          err instanceof Error
+                            ? err.message
+                            : "Failed to delete user"
+                        );
                       } finally {
                         setIsSubmitting(false);
                       }
@@ -607,13 +702,24 @@ export default function ManageUsersPage() {
                 onCancel={() => setDetailsEditMode(false)}
                 onSave={async (updatedUser: User, classId?: number | null) => {
                   // update local list
-                  setUsers(users.map((u) => (u.id === updatedUser.id ? updatedUser : u)));
+                  setUsers(
+                    users.map((u) =>
+                      u.id === updatedUser.id ? updatedUser : u
+                    )
+                  );
                   // assign to class if provided
                   if (classId && updatedUser.role === "student") {
                     try {
-                      await classesAPI.assignStudentToClass(classId, updatedUser.id, token);
+                      await classesAPI.assignStudentToClass(
+                        classId,
+                        updatedUser.id,
+                        token
+                      );
                     } catch (e) {
-                      console.warn("Failed to assign class in details modal:", e);
+                      console.warn(
+                        "Failed to assign class in details modal:",
+                        e
+                      );
                     }
                   }
                   setSelectedUser(updatedUser);

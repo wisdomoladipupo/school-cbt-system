@@ -25,7 +25,9 @@ interface AssignTeacherResult {
 
 export default function AdminClassManagement() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"students" | "teachers" | "details">("students");
+  const [activeTab, setActiveTab] = useState<
+    "students" | "teachers" | "details"
+  >("students");
   const [classes, setClasses] = useState<Class[]>([]);
   const [schoolLevels, setSchoolLevels] = useState<SchoolLevelType[]>([]);
 
@@ -37,16 +39,20 @@ export default function AdminClassManagement() {
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
-  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(null);
-  const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<SubjectWithTeachers[]>([]);
+  const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(
+    null
+  );
+  const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<
+    SubjectWithTeachers[]
+  >([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
   const [teacherAssignments, setTeacherAssignments] = useState<any[]>([]);
   const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
-  
 
   const token = getStoredToken();
-  const messageText = typeof message === "string" ? message : JSON.stringify(message);
+  const messageText =
+    typeof message === "string" ? message : JSON.stringify(message);
 
   // ----------------------
   // FETCH FUNCTIONS
@@ -56,7 +62,11 @@ export default function AdminClassManagement() {
       const data = await classesAPI.listClasses();
       setClasses(data);
     } catch (error) {
-      setMessage(`Error fetching classes: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching classes: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, []);
 
@@ -75,7 +85,11 @@ export default function AdminClassManagement() {
       const data = await usersAPI.list(token);
       setStudents(data.filter((u) => u.role === "student"));
     } catch (error) {
-      setMessage(`Error fetching students: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching students: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, [token]);
 
@@ -85,7 +99,11 @@ export default function AdminClassManagement() {
       const data = await usersAPI.list(token);
       setTeachers(data.filter((u) => u.role === "teacher"));
     } catch (error) {
-      setMessage(`Error fetching teachers: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching teachers: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, [token]);
 
@@ -93,10 +111,16 @@ export default function AdminClassManagement() {
     try {
       const details = await classesAPI.getClass(classId);
       setClassDetails(details);
-      const subjectData = await classesAPI.getClassSubjectsWithTeachers(classId);
+      const subjectData = await classesAPI.getClassSubjectsWithTeachers(
+        classId
+      );
       setSubjectsWithTeachers(subjectData as SubjectWithTeachers[]);
     } catch (error) {
-      setMessage(`Error fetching class details: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error fetching class details: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   }, []);
 
@@ -179,7 +203,11 @@ export default function AdminClassManagement() {
     }
     setLoading(true);
     try {
-      const updated = await classesAPI.updateClassSubjects(selectedClass, selectedSubjectIds, token);
+      const updated = await classesAPI.updateClassSubjects(
+        selectedClass,
+        selectedSubjectIds,
+        token
+      );
       setClassDetails(updated);
       setMessage("Success! Class subjects updated.");
       setIsSubjectsModalOpen(false);
@@ -187,7 +215,9 @@ export default function AdminClassManagement() {
       fetchClassDetails(selectedClass);
       fetchAllSubjects();
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -204,12 +234,18 @@ export default function AdminClassManagement() {
 
     setLoading(true);
     try {
-      const result = await classesAPI.assignStudentToClass(selectedClass, selectedStudent, token) as AssignStudentResult;
+      const result = (await classesAPI.assignStudentToClass(
+        selectedClass,
+        selectedStudent,
+        token
+      )) as AssignStudentResult;
 
       let successMessage = "Success! Student assigned to class.";
       const parts = [];
-      if (result.subjects_assigned !== undefined) parts.push(`${result.subjects_assigned} subjects assigned`);
-      if (result.exams_created !== undefined) parts.push(`${result.exams_created} exams created`);
+      if (result.subjects_assigned !== undefined)
+        parts.push(`${result.subjects_assigned} subjects assigned`);
+      if (result.exams_created !== undefined)
+        parts.push(`${result.exams_created} exams created`);
       if (parts.length > 0) successMessage += " " + parts.join(", ") + ".";
 
       setMessage(successMessage);
@@ -217,7 +253,9 @@ export default function AdminClassManagement() {
       fetchStudents();
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -239,30 +277,42 @@ export default function AdminClassManagement() {
       if (!classSubjIds.includes(selectedSubject)) {
         try {
           setMessage("Subject not assigned to class — adding it now...");
-          await classesAPI.addSubjectToClass(selectedClass, selectedSubject, token);
+          await classesAPI.addSubjectToClass(
+            selectedClass,
+            selectedSubject,
+            token
+          );
           // Refresh class details so UI reflects the change
           await fetchClassDetails(selectedClass);
           await fetchAllSubjects();
           setMessage("Subject added to class. Proceeding to assign teacher...");
         } catch (err) {
-          setMessage(`Failed to add subject to class: ${err instanceof Error ? err.message : String(err)}`);
+          setMessage(
+            `Failed to add subject to class: ${
+              err instanceof Error ? err.message : String(err)
+            }`
+          );
           setLoading(false);
           return;
         }
       }
-      const result = await classesAPI.assignTeacherToSubject(
+      const result = (await classesAPI.assignTeacherToSubject(
         selectedClass,
         selectedTeacher,
         selectedSubject,
         token
-      ) as AssignTeacherResult;
+      )) as AssignTeacherResult;
 
-      setMessage(`Success! Teacher assigned to subject. ${result.message || ""}`);
+      setMessage(
+        `Success! Teacher assigned to subject. ${result.message || ""}`
+      );
       setSelectedTeacher(null);
       setSelectedSubject(null);
       fetchClassDetails(selectedClass);
     } catch (error) {
-      setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
+      setMessage(
+        `Error: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
     } finally {
       setLoading(false);
     }
@@ -279,7 +329,9 @@ export default function AdminClassManagement() {
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
       <div className="flex items-center justify-between mb-6">
-        <h2 className="text-2xl font-bold text-gray-800">Manage Classes, Teachers & Students</h2>
+        <h2 className="text-2xl font-bold text-gray-800">
+          Manage Classes, Teachers & Students
+        </h2>
         <button
           onClick={() => router.push("/dashboard/admin/classes/create")}
           className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
@@ -291,7 +343,9 @@ export default function AdminClassManagement() {
       {messageText && (
         <div
           className={`mb-4 p-4 rounded ${
-            messageText.includes("Success") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
+            messageText.includes("Success")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
           }`}
         >
           {messageText}
@@ -300,7 +354,9 @@ export default function AdminClassManagement() {
 
       {/* Class Selection */}
       <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-        <label className="block mb-2 font-semibold text-gray-700">Select Class to Manage</label>
+        <label className="block mb-2 font-semibold text-gray-700">
+          Select Class to Manage
+        </label>
         <select
           value={selectedClass ?? ""}
           onChange={(e) => {
@@ -312,18 +368,24 @@ export default function AdminClassManagement() {
         >
           <option value="">-- Choose a class --</option>
           {schoolLevels.map((level) => {
-            const classesInLevel = classes.filter((c) => c.level === level.code);
+            const classesInLevel = classes.filter(
+              (c) => c.level === level.code
+            );
             if (classesInLevel.length === 0) return null;
             return (
               <optgroup key={level.code} label={level.display_name}>
                 {classesInLevel.map((c) => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
+                  <option key={c.id} value={c.id}>
+                    {c.name}
+                  </option>
                 ))}
               </optgroup>
             );
           })}
         </select>
-        <p className="text-sm text-gray-600 mt-2">Classes organized by Nigerian school system levels</p>
+        <p className="text-sm text-gray-600 mt-2">
+          Classes organized by Nigerian school system levels
+        </p>
       </div>
 
       {selectedClass !== null && (
@@ -480,10 +542,13 @@ export default function AdminClassManagement() {
                     >
                       <option value="">-- Choose a subject --</option>
                       {allSubjects.map((subj: Subject) => {
-                        const assigned = !!classDetails?.subjects?.some((s) => s.id === subj.id);
+                        const assigned = !!classDetails?.subjects?.some(
+                          (s) => s.id === subj.id
+                        );
                         return (
                           <option key={subj.id} value={subj.id}>
-                            {subj.name} ({subj.code}){assigned ? " — assigned" : ""}
+                            {subj.name} ({subj.code})
+                            {assigned ? " — assigned" : ""}
                           </option>
                         );
                       })}
@@ -543,19 +608,33 @@ export default function AdminClassManagement() {
               {/* All Teachers Assignments (global view) */}
               {teacherAssignments.length > 0 && (
                 <div className="mt-6">
-                  <h3 className="font-semibold text-gray-800 mb-3">All Teacher Assignments</h3>
+                  <h3 className="font-semibold text-gray-800 mb-3">
+                    All Teacher Assignments
+                  </h3>
                   <div className="space-y-3">
                     {teacherAssignments.map((t) => (
-                      <div key={t.teacher_id} className="p-3 bg-white border border-gray-200 rounded-lg">
-                        <p className="font-medium text-gray-900">{t.teacher_name} <span className="text-xs text-gray-500">({t.teacher_email})</span></p>
+                      <div
+                        key={t.teacher_id}
+                        className="p-3 bg-white border border-gray-200 rounded-lg"
+                      >
+                        <p className="font-medium text-gray-900">
+                          {t.teacher_name}{" "}
+                          <span className="text-xs text-gray-500">
+                            ({t.teacher_email})
+                          </span>
+                        </p>
                         {t.assignments && t.assignments.length > 0 ? (
                           <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
                             {t.assignments.map((a: any, idx: number) => (
-                              <li key={idx}>{a.subject_name} — {a.class_name}</li>
+                              <li key={idx}>
+                                {a.subject_name} — {a.class_name}
+                              </li>
                             ))}
                           </ul>
                         ) : (
-                          <p className="text-sm text-gray-500 italic">No assignments</p>
+                          <p className="text-sm text-gray-500 italic">
+                            No assignments
+                          </p>
                         )}
                       </div>
                     ))}

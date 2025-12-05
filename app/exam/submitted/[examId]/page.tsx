@@ -30,7 +30,9 @@ export default function ExamSubmittedPage() {
 
       try {
         const myResults = await resultsAPI.getMyResults(token);
-        const found = myResults.find((r: any) => r.exam_id === examId || r.examId === examId);
+        const found = myResults.find(
+          (r: any) => r.exam_id === examId || r.examId === examId
+        );
         if (found) {
           setResult(found);
         }
@@ -44,7 +46,9 @@ export default function ExamSubmittedPage() {
 
         if (!found) {
           // If not found, still show a friendly message — submission may take time
-          setError("Submission recorded but result not yet available. Check Results page shortly.");
+          setError(
+            "Submission recorded but result not yet available. Check Results page shortly."
+          );
         }
       } catch (e: any) {
         setError(e.message || "Failed to load submission info");
@@ -67,11 +71,15 @@ export default function ExamSubmittedPage() {
           <div className="space-y-4">
             {result ? (
               <div className="p-4 bg-white border rounded">
-                <h2 className="font-semibold text-lg">{examTitle || `Exam ${examId}`}</h2>
+                <h2 className="font-semibold text-lg">
+                  {examTitle || `Exam ${examId}`}
+                </h2>
                 <p className="text-sm text-gray-600">Submitted successfully.</p>
                 <div className="mt-3 flex items-center gap-4">
                   <div className="text-xl font-bold">{result.score ?? 0}</div>
-                  <div className="text-sm text-gray-600">/ {result.max_score ?? result.max ?? 0}</div>
+                  <div className="text-sm text-gray-600">
+                    / {result.max_score ?? result.max ?? 0}
+                  </div>
                 </div>
                 <div className="mt-3">
                   {userRole && userRole !== "student" && (
@@ -92,7 +100,9 @@ export default function ExamSubmittedPage() {
               </div>
             ) : (
               <div className="p-4 bg-yellow-50 border rounded">
-                <p className="text-yellow-800">{error || "Submission recorded."}</p>
+                <p className="text-yellow-800">
+                  {error || "Submission recorded."}
+                </p>
                 <div className="mt-3">
                   {userRole && userRole !== "student" && (
                     <button

@@ -169,7 +169,11 @@ export default function RegisterPage() {
               required
             />
             {passport && (
-              <img src={passport} alt="passport" className="w-24 h-24 mt-2 object-cover rounded" />
+              <img
+                src={passport}
+                alt="passport"
+                className="w-24 h-24 mt-2 object-cover rounded"
+              />
             )}
           </div>
 

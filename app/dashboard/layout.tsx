@@ -1,7 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getStoredUser, clearStoredAuth, usersAPI, getStoredToken } from "../../lib/api";
+import {
+  getStoredUser,
+  clearStoredAuth,
+  usersAPI,
+  getStoredToken,
+} from "../../lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -137,13 +142,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 {userPassport ? (
-                  <img src={userPassport} alt="avatar" className="w-10 h-10 rounded-full object-cover border" />
+                  <img
+                    src={userPassport}
+                    alt="avatar"
+                    className="w-10 h-10 rounded-full object-cover border"
+                  />
                 ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">{userName.charAt(0).toUpperCase()}</div>
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
                 )}
                 <div className="text-sm text-gray-600">
-                  <div>Welcome, <span className="font-semibold">{userName}</span></div>
-                  {userReg && <div className="text-xs text-gray-500">Reg#: {userReg}</div>}
+                  <div>
+                    Welcome, <span className="font-semibold">{userName}</span>
+                  </div>
+                  {userReg && (
+                    <div className="text-xs text-gray-500">Reg#: {userReg}</div>
+                  )}
                 </div>
               </div>
             </div>

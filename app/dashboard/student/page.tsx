@@ -56,14 +56,14 @@ export default function StudentDashboardPage() {
     const loadData = async () => {
       try {
         setLoading(true);
-        
+
         // Get current user with class info
         const userWithClass = await usersAPI.getCurrentUser(currentToken);
         setStudent(userWithClass);
 
         // Debug logs to help diagnose missing exams
         console.debug("Student dashboard: userWithClass=", userWithClass);
-        
+
         // Fetch all published exams
         const allExams = await examsAPI.list(currentToken);
 
@@ -71,10 +71,16 @@ export default function StudentDashboardPage() {
         let classSubjectIds: number[] = [];
         if (userWithClass.class_id) {
           try {
-            const classDetails = await classesAPI.getClass(userWithClass.class_id);
-            classSubjectIds = classDetails.subjects?.map((s: any) => s.id) || [];
+            const classDetails = await classesAPI.getClass(
+              userWithClass.class_id
+            );
+            classSubjectIds =
+              classDetails.subjects?.map((s: any) => s.id) || [];
           } catch (e) {
-            console.warn("Failed to fetch class details for student dashboard:", e);
+            console.warn(
+              "Failed to fetch class details for student dashboard:",
+              e
+            );
           }
         }
 
@@ -82,12 +88,25 @@ export default function StudentDashboardPage() {
         const studentExams = allExams.filter((exam) => {
           if (!exam.published) return false;
           // exact class match
-          if (exam.class_id && userWithClass.class_id && exam.class_id === userWithClass.class_id) return true;
+          if (
+            exam.class_id &&
+            userWithClass.class_id &&
+            exam.class_id === userWithClass.class_id
+          )
+            return true;
           // subject match where exam may not have class_id set
-          if (exam.subject_id && classSubjectIds.includes(exam.subject_id)) return true;
+          if (exam.subject_id && classSubjectIds.includes(exam.subject_id))
+            return true;
           return false;
         });
-        console.debug("Student dashboard: allExams count=", allExams.length, "filtered=", studentExams.length, "classSubjectIds=", classSubjectIds);
+        console.debug(
+          "Student dashboard: allExams count=",
+          allExams.length,
+          "filtered=",
+          studentExams.length,
+          "classSubjectIds=",
+          classSubjectIds
+        );
         setExams(studentExams);
         setError(null);
       } catch (err: any) {
@@ -113,7 +132,11 @@ export default function StudentDashboardPage() {
       <div className="flex items-center gap-6 bg-white border border-gray-200 rounded-xl shadow p-6">
         <div>
           {student.passport ? (
-            <img src={student.passport} alt="passport" className="w-20 h-20 rounded-full object-cover border" />
+            <img
+              src={student.passport}
+              alt="passport"
+              className="w-20 h-20 rounded-full object-cover border"
+            />
           ) : (
             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-2xl">
               {student.full_name.charAt(0).toUpperCase()}
@@ -122,17 +145,23 @@ export default function StudentDashboardPage() {
         </div>
 
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-gray-900">{student.full_name}</h2>
-          <p className="text-gray-900 font-extrabold text-lg">Reg#: {student.registration_number || "(not set)"}</p>
+          <h2 className="text-2xl font-bold text-gray-900">
+            {student.full_name}
+          </h2>
+          <p className="text-gray-900 font-extrabold text-lg">
+            Reg#: {student.registration_number || "(not set)"}
+          </p>
           <p className="text-gray-700">Email: {student.email}</p>
-          <p className="text-gray-700">Role: <span className="capitalize font-medium">{student.role}</span></p>
+          <p className="text-gray-700">
+            Role: <span className="capitalize font-medium">{student.role}</span>
+          </p>
         </div>
       </div>
 
       {/* Exams Assigned */}
       <div className="bg-white border border-gray-200 rounded-xl shadow p-6 space-y-4">
         <h3 className="text-xl font-semibold text-gray-800">Available Exams</h3>
-        
+
         {error && (
           <div className="bg-red-50 border border-red-200 rounded-lg p-4">
             <p className="text-red-700">{error}</p>
@@ -149,7 +178,10 @@ export default function StudentDashboardPage() {
               <ul className="text-sm text-yellow-700 list-disc list-inside mt-1">
                 <li>Student class id: {student.class_id ?? "(none)"}</li>
                 <li>Exams shown: {exams.length}</li>
-                <li>Make sure exams are published and assigned to your class or subjects.</li>
+                <li>
+                  Make sure exams are published and assigned to your class or
+                  subjects.
+                </li>
               </ul>
             </div>
           ) : (
@@ -165,9 +197,13 @@ export default function StudentDashboardPage() {
                 <div className="flex-1">
                   <h4 className="font-semibold text-gray-900">{exam.title}</h4>
                   {exam.description && (
-                    <p className="text-sm text-gray-600 mt-1">{exam.description}</p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      {exam.description}
+                    </p>
                   )}
-                  <p className="text-sm text-gray-500 mt-2">⏱️ {exam.duration_minutes} minutes</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    ⏱️ {exam.duration_minutes} minutes
+                  </p>
                 </div>
                 <button
                   onClick={() => router.push(`/exam/take/${exam.id}`)}

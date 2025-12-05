@@ -3,9 +3,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "../../../dashboard/layout";
-import {
-  getStoredToken,
-} from "../../../../lib/api";
+import { getStoredToken } from "../../../../lib/api";
 import { examsAPI, questionsAPI, resultsAPI } from "../../../../lib/api/api";
 import Timer, { TimerHandle } from "../../../../components/cbt/Timer";
 import QuestionCard from "../../../../components/cbt/QuestionCard";
@@ -150,7 +148,10 @@ export default function TakeExamPage() {
       }, 2000);
     } catch (error) {
       console.error("Failed to submit exam:", error);
-      const errorMsg = error instanceof Error ? error.message : "Failed to submit exam. Please try again.";
+      const errorMsg =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit exam. Please try again.";
       alert(errorMsg);
     }
   };

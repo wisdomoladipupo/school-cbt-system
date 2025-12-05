@@ -15,11 +15,12 @@ import type {
   Class,
   ClassWithSubjects,
   Subject,
-  SchoolLevel
+  SchoolLevel,
 } from "./types";
 
-
-const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+const API_BASE_URL = (
+  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+).replace(/\/$/, "");
 
 import { getStoredToken } from "./token";
 
@@ -104,15 +105,15 @@ export const usersAPI = {
   },
 
   create: async (payload: RegisterPayload, token: string): Promise<User> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/`, { // note trailing slash
-  method: "POST",
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bearer ${token}`,
-  },
-  body: JSON.stringify(payload),
-});
-
+    const response = await fetch(`${API_BASE_URL}/api/users/`, {
+      // note trailing slash
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
 
     if (!response.ok) {
       const error = await response.json();
@@ -159,7 +160,12 @@ export const usersAPI = {
 
   update: async (
     userId: number,
-    updates: { full_name?: string; password?: string; role?: string; passport?: string },
+    updates: {
+      full_name?: string;
+      password?: string;
+      role?: string;
+      passport?: string;
+    },
     token: string
   ): Promise<User> => {
     const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
@@ -232,19 +238,22 @@ export const usersAPI = {
   },
 
   getTeacherAssignments: async (token: string): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/users/teacher-assignments`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/users/teacher-assignments`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
       throw new Error(err.detail || "Failed to fetch teacher assignments");
     }
     return response.json();
   },
-  
+
   getMyAssignments: async (token: string): Promise<any[]> => {
     const response = await fetch(`${API_BASE_URL}/api/users/me/assignments`, {
       method: "GET",
@@ -261,13 +270,14 @@ export const usersAPI = {
   },
 };
 
-
-
 export const examsAPI = {
   create: async (payload: ExamCreate, token: string): Promise<Exam> => {
     const res = await fetch(`${API_BASE_URL}/api/exams/`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
       body: JSON.stringify(payload),
     });
 
@@ -285,7 +295,9 @@ export const examsAPI = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch exams (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to fetch exams (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -297,19 +309,25 @@ export const examsAPI = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch all exams (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to fetch all exams (status ${res.status})`
+      );
     }
     return res.json();
   },
 
   getById: async (examId: number, token?: string): Promise<Exam> => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) headers.Authorization = `Bearer ${token}`;
 
     const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, { headers });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to fetch exam (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to fetch exam (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -322,7 +340,9 @@ export const examsAPI = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to delete exam (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to delete exam (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -331,20 +351,29 @@ export const examsAPI = {
     const formData = new FormData();
     formData.append("file", file);
 
-    const res = await fetch(`${API_BASE_URL}/api/exams/import-from-document/${examId}`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${token}` }, // Content-Type auto
-      body: formData,
-    });
+    const res = await fetch(
+      `${API_BASE_URL}/api/exams/import-from-document/${examId}`,
+      {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` }, // Content-Type auto
+        body: formData,
+      }
+    );
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to import questions (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to import questions (status ${res.status})`
+      );
     }
     return res.json();
   },
 
-  togglePublish: async (examId: number, publish: boolean, token: string): Promise<Exam> => {
+  togglePublish: async (
+    examId: number,
+    publish: boolean,
+    token: string
+  ): Promise<Exam> => {
     const res = await fetch(`${API_BASE_URL}/api/exams/${examId}/publish`, {
       method: "PUT",
       headers: {
@@ -356,7 +385,9 @@ export const examsAPI = {
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to update exam (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to update exam (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -385,7 +416,7 @@ export const questionsAPI = {
     return response.json();
   },
 
- // Get all questions for an exam
+  // Get all questions for an exam
   getForExam: async (examId: number, token: string) => {
     const res = await fetch(`${API_BASE_URL}/api/exams/${examId}/questions`, {
       headers: { Authorization: `Bearer ${token}` },
@@ -396,7 +427,6 @@ export const questionsAPI = {
     }
     return res.json(); // should return an array of questions
   },
-
 
   uploadImage: async (
     file: File,
@@ -529,7 +559,10 @@ export const classesAPI = {
   // ------------------
   //   CREATE CLASS
   // ------------------
-  createClass: async (data: { name: string; level: string }, token: string): Promise<Class> => {
+  createClass: async (
+    data: { name: string; level: string },
+    token: string
+  ): Promise<Class> => {
     const response = await fetch(`${API_BASE_URL}/api/classes`, {
       method: "POST",
       headers: {
@@ -550,7 +583,11 @@ export const classesAPI = {
   // ------------------
   //   UPDATE CLASS
   // ------------------
-  updateClass: async (classId: number, data: { name: string; level: string }, token: string): Promise<Class> => {
+  updateClass: async (
+    classId: number,
+    data: { name: string; level: string },
+    token: string
+  ): Promise<Class> => {
     const response = await fetch(`${API_BASE_URL}/api/classes/${classId}`, {
       method: "PUT",
       headers: {
@@ -572,15 +609,22 @@ export const classesAPI = {
   //   SUBJECT UPDATES
   // ------------------
 
-  updateClassSubjects: async (classId: number, subjectIds: number[], token: string): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects`, {
-      method: "PUT",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(subjectIds),
-    });
+  updateClassSubjects: async (
+    classId: number,
+    subjectIds: number[],
+    token: string
+  ): Promise<ClassWithSubjects> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects`,
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(subjectIds),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -590,14 +634,21 @@ export const classesAPI = {
     return response.json();
   },
 
-  addSubjectToClass: async (classId: number, subjectId: number, token: string): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  addSubjectToClass: async (
+    classId: number,
+    subjectId: number,
+    token: string
+  ): Promise<ClassWithSubjects> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -607,11 +658,18 @@ export const classesAPI = {
     return response.json();
   },
 
-  removeSubjectFromClass: async (classId: number, subjectId: number, token: string): Promise<ClassWithSubjects> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${token}` },
-    });
+  removeSubjectFromClass: async (
+    classId: number,
+    subjectId: number,
+    token: string
+  ): Promise<ClassWithSubjects> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects/${subjectId}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -620,18 +678,25 @@ export const classesAPI = {
 
     return response.json();
   },
-  assignStudentToClass: async (classId: number, studentId: number, token: string): Promise<any> => {
-  const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/assign-student`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ student_id: studentId }),
-  });
-  if (!response.ok) throw new Error("Failed to assign student to class");
-  return response.json();
-},
+  assignStudentToClass: async (
+    classId: number,
+    studentId: number,
+    token: string
+  ): Promise<any> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/assign-student`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ student_id: studentId }),
+      }
+    );
+    if (!response.ok) throw new Error("Failed to assign student to class");
+    return response.json();
+  },
 
   listSubjects: async (): Promise<Subject[]> => {
     const response = await fetch(`${API_BASE_URL}/api/classes/subjects`, {
@@ -643,41 +708,59 @@ export const classesAPI = {
   },
 
   getClassSubjectsWithTeachers: async (classId: number): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/subjects-with-teachers`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/subjects-with-teachers`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     if (!response.ok) throw new Error("Failed to fetch subjects with teachers");
     return response.json();
   },
 
- assignTeacherToSubject: async (classId: number, teacherId: number, subjectId: number, token: string): Promise<any> => {
-  const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/assign-teacher-to-subject`, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({
-      teacher_id: teacherId,
-      subject_id: subjectId,
-    }),
-  });
+  assignTeacherToSubject: async (
+    classId: number,
+    teacherId: number,
+    subjectId: number,
+    token: string
+  ): Promise<any> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/assign-teacher-to-subject`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          teacher_id: teacherId,
+          subject_id: subjectId,
+        }),
+      }
+    );
 
-  if (!response.ok) throw new Error("Failed to assign teacher to subject");
-  return response.json();
-},
+    if (!response.ok) throw new Error("Failed to assign teacher to subject");
+    return response.json();
+  },
 
   // Teacher request to teach a subject in a class
-  requestTeacherSubject: async (classId: number, subjectId: number, token: string): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/request-teacher-subject`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify({ subject_id: subjectId }),
-    });
+  requestTeacherSubject: async (
+    classId: number,
+    subjectId: number,
+    token: string
+  ): Promise<any> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/request-teacher-subject`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ subject_id: subjectId }),
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -688,12 +771,15 @@ export const classesAPI = {
 
   // Admin: list pending teacher requests
   listTeacherRequests: async (token: string): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/teacher-requests`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -703,13 +789,19 @@ export const classesAPI = {
   },
 
   // Admin: approve a teacher request
-  approveTeacherRequest: async (requestId: number, token: string): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests/${requestId}/approve`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  approveTeacherRequest: async (
+    requestId: number,
+    token: string
+  ): Promise<any> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/teacher-requests/${requestId}/approve`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();
@@ -719,13 +811,19 @@ export const classesAPI = {
   },
 
   // Admin: reject a teacher request
-  rejectTeacherRequest: async (requestId: number, token: string): Promise<any> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests/${requestId}/reject`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
+  rejectTeacherRequest: async (
+    requestId: number,
+    token: string
+  ): Promise<any> => {
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/teacher-requests/${requestId}/reject`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
     if (!response.ok) {
       const error = await response.json();

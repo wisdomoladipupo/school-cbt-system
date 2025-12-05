@@ -50,7 +50,9 @@ export default function ImportQuestionsModal({
       formData.append("file", file);
 
       const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"}/api/exams/import-from-document/${examId}`,
+        `${
+          process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
+        }/api/exams/import-from-document/${examId}`,
         {
           method: "POST",
           headers: {
@@ -168,9 +170,11 @@ export default function ImportQuestionsModal({
                     View errors
                   </summary>
                   <ul className="mt-2 space-y-1 text-xs text-red-600">
-                    {result.errors.slice(0, 5).map((error: string, i: number) => (
-                      <li key={i}>• {error}</li>
-                    ))}
+                    {result.errors
+                      .slice(0, 5)
+                      .map((error: string, i: number) => (
+                        <li key={i}>• {error}</li>
+                      ))}
                   </ul>
                 </details>
               )}

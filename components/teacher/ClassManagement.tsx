@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { getStoredToken } from "@/lib/api";
-import {  classesAPI, usersAPI, }  from '@/lib/api/api'
+import { classesAPI, usersAPI } from "@/lib/api/api";
 import type { User, Class } from "@/lib/api";
 
 export default function TeacherClassManagement() {
@@ -10,7 +10,8 @@ export default function TeacherClassManagement() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const token = getStoredToken();
-  const messageText = typeof message === "string" ? message : JSON.stringify(message);
+  const messageText =
+    typeof message === "string" ? message : JSON.stringify(message);
 
   const fetchTeacherClasses = useCallback(async () => {
     try {
@@ -45,17 +46,21 @@ export default function TeacherClassManagement() {
 
   return (
     <div className="p-6 bg-white rounded-lg shadow-md">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800">Subject Requests Disabled</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800">
+        Subject Requests Disabled
+      </h2>
 
       {messageText && (
-        <div className="mb-4 p-4 rounded bg-green-100 text-green-700">{messageText}</div>
+        <div className="mb-4 p-4 rounded bg-green-100 text-green-700">
+          {messageText}
+        </div>
       )}
 
       <p className="text-sm text-gray-700">
-        The teacher "Request Subject Assignment" feature has been disabled. If you
-        need to be assigned to teach a subject, please contact an administrator.
+        The teacher "Request Subject Assignment" feature has been disabled. If
+        you need to be assigned to teach a subject, please contact an
+        administrator.
       </p>
     </div>
   );
 }
-

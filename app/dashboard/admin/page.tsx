@@ -9,7 +9,9 @@ import { usersAPI, examsAPI } from "@/lib/api/api";
 export default function AdminDashboardPage() {
   const router = useRouter();
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState<"overview" | "classes">("overview");
+  const [activeTab, setActiveTab] = useState<"overview" | "classes">(
+    "overview"
+  );
 
   const [totalStudents, setTotalStudents] = useState<number | null>(null);
   const [totalTeachers, setTotalTeachers] = useState<number | null>(null);
@@ -32,7 +34,7 @@ export default function AdminDashboardPage() {
         setTotalStudents(students.length);
 
         const users = await usersAPI.list(token);
-        setTotalTeachers(users.filter(u => u.role === "teacher").length);
+        setTotalTeachers(users.filter((u) => u.role === "teacher").length);
 
         const exams = await examsAPI.list(token);
         setActiveExams(exams.length);
@@ -48,7 +50,7 @@ export default function AdminDashboardPage() {
     setIsModalOpen(false);
     // Optionally refresh students count after adding
     if (token) {
-      usersAPI.listStudents(token).then(s => setTotalStudents(s.length));
+      usersAPI.listStudents(token).then((s) => setTotalStudents(s.length));
     }
   };
 
@@ -85,21 +87,27 @@ export default function AdminDashboardPage() {
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">Total Students</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Total Students
+              </h3>
               <p className="text-3xl font-bold mt-2 text-gray-900">
                 {totalStudents ?? "--"}
               </p>
             </div>
 
             <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">Total Teachers</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Total Teachers
+              </h3>
               <p className="text-3xl font-bold mt-2 text-gray-900">
                 {totalTeachers ?? "--"}
               </p>
             </div>
 
             <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">Active Exams</h3>
+              <h3 className="text-lg font-semibold text-gray-700">
+                Active Exams
+              </h3>
               <p className="text-3xl font-bold mt-2 text-gray-900">
                 {activeExams ?? "--"}
               </p>
@@ -107,7 +115,9 @@ export default function AdminDashboardPage() {
           </div>
 
           <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h3>
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              Quick Actions
+            </h3>
             <div className="flex gap-4 flex-wrap">
               <button
                 className="px-5 py-3 bg-purple-50 text-purple-700 font-medium rounded-xl shadow hover:bg-purple-100 transition"
@@ -146,7 +156,9 @@ export default function AdminDashboardPage() {
 
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
-        <h3 className="text-xl font-semibold mb-4 text-gray-800">Add Student</h3>
+        <h3 className="text-xl font-semibold mb-4 text-gray-800">
+          Add Student
+        </h3>
         <StudentForm onSubmit={handleAddStudent} />
       </Modal>
     </div>

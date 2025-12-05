@@ -135,7 +135,7 @@ export default function ExamPage() {
           )}
         </div>
       )}
-      
+
       <ImportQuestionsModal
         examId={examId || 0}
         isOpen={importModalOpen}
@@ -150,7 +150,9 @@ export default function ExamPage() {
             )
               .then((res) => res.json())
               .then((data) => setQuestions(data))
-              .catch((err) => console.error("Failed to reload questions:", err));
+              .catch((err) =>
+                console.error("Failed to reload questions:", err)
+              );
           }
         }}
         onError={(error) => setError(error)}
