@@ -100,6 +100,20 @@ class TeacherSubject(Base):
     class_obj = relationship("Class", backref="teacher_subjects")
 
 
+class TeacherSubjectRequest(Base):
+    __tablename__ = "teacher_subject_requests"
+    id = Column(Integer, primary_key=True, index=True)
+    teacher_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    subject_id = Column(Integer, ForeignKey("subjects.id"), nullable=False)
+    class_id = Column(Integer, ForeignKey("classes.id"), nullable=False)
+    status = Column(String, default="pending")  # pending | approved | rejected
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    teacher = relationship("User", backref="teacher_subject_requests")
+    subject = relationship("Subject", backref="teacher_subject_requests")
+    class_obj = relationship("Class", backref="teacher_subject_requests")
+
+
 # Map Nigerian school levels to their subjects
 NIGERIAN_SCHOOL_SUBJECTS = {
     "NUR1": ["Numeracy", "Literacy", "Creative Activities", "Play/Breaks"],

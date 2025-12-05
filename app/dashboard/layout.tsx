@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
-import { getStoredUser, clearStoredAuth } from "../../lib/api";
+import { getStoredUser, clearStoredAuth, usersAPI, getStoredToken } from "../../lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
@@ -14,6 +14,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     "admin" | "teacher" | "student" | null
   >(null);
   const [userName, setUserName] = useState<string>("");
+  const [userPassport, setUserPassport] = useState<string | null>(null);
+  const [userReg, setUserReg] = useState<string | null>(null);
   const router = useRouter();
 
   // Ensure state update is asynchronous to avoid cascading renders
@@ -27,6 +29,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       setUserRole(user.role);
       setUserName(user.full_name || "User");
     }, 0);
+    // Fetch fresh user details (passport, registration_number)
+    (async () => {
+      try {
+        const token = getStoredToken();
+        if (!token) return;
+        const fresh = await usersAPI.getCurrentUser(token);
+        setUserPassport((fresh as any).passport || null);
+        setUserReg((fresh as any).registration_number || null);
+        // update stored user so other parts can rely on it
+        try {
+          localStorage.setItem("currentUser", JSON.stringify(fresh));
+        } catch {}
+      } catch (e) {
+        // ignore fetch errors
+      }
+    })();
   }, []);
 
   const handleLogout = () => {
@@ -90,12 +108,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </Link>
           )}
 
-          <Link
-            href="/results"
-            className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-          >
-            Results
-          </Link>
+          {(userRole === "admin" || userRole === "teacher") && (
+            <Link
+              href="/results"
+              className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
+            >
+              Results
+            </Link>
+          )}
         </nav>
 
         <div className="mt-auto pt-6 border-t border-indigo-800">
@@ -115,9 +135,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           <div className="flex justify-between items-center">
             <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
             <div className="flex items-center gap-4">
-              <span className="text-sm text-gray-600">
-                Welcome, <span className="font-semibold">{userName}</span>
-              </span>
+              <div className="flex items-center gap-3">
+                {userPassport ? (
+                  <img src={userPassport} alt="avatar" className="w-10 h-10 rounded-full object-cover border" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">{userName.charAt(0).toUpperCase()}</div>
+                )}
+                <div className="text-sm text-gray-600">
+                  <div>Welcome, <span className="font-semibold">{userName}</span></div>
+                  {userReg && <div className="text-xs text-gray-500">Reg#: {userReg}</div>}
+                </div>
+              </div>
             </div>
           </div>
         </header>

@@ -29,6 +29,7 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [role, setRole] = useState<"admin" | "teacher" | "student">("student");
   const [error, setError] = useState("");
+  const [passport, setPassport] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const router = useRouter();
@@ -47,6 +48,7 @@ export default function RegisterPage() {
         email,
         password,
         role,
+        passport: passport || "",
       });
 
       // Decode JWT to get user info
@@ -150,6 +152,25 @@ export default function RegisterPage() {
               <option value="teacher">Teacher</option>
               <option value="admin">Admin</option>
             </select>
+          </div>
+
+          <div>
+            <label className="block mb-1 font-semibold">Passport Photo</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = () => setPassport(reader.result as string);
+                reader.readAsDataURL(file);
+              }}
+              required
+            />
+            {passport && (
+              <img src={passport} alt="passport" className="w-24 h-24 mt-2 object-cover rounded" />
+            )}
           </div>
 
           <button

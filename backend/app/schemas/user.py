@@ -7,6 +7,8 @@ class UserCreate(BaseModel):
     password: str
     role: Literal["admin", "teacher", "student"] = "student"
     student_class: Optional[str] = None
+    # Passport photo data (could be a data URL or uploaded image path)
+    passport: str
 
 class LoginRequest(BaseModel):
     email: str  # Use plain str instead of EmailStr to accept a wider range of email formats
@@ -23,6 +25,8 @@ class UserOut(BaseModel):
     role: str
     student_class: Optional[str]
     registration_number: Optional[str]
+    passport: Optional[str]
+    class_id: Optional[int] = None  # Student's assigned class ID
 
 
 class UserUpdate(BaseModel):
@@ -30,6 +34,7 @@ class UserUpdate(BaseModel):
     password: Optional[str] = None
     role: Optional[Literal["admin", "teacher", "student"]]
     student_class: Optional[str] = None
+    passport: Optional[str] = None
 
 class Token(BaseModel):
     access_token: str

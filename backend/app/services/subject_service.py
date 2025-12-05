@@ -126,6 +126,19 @@ class ClassService:
         if not class_obj:
             raise ValueError("Class not found")
 
+        # Check if student is already in another class (prevent multiple class assignments)
+        existing_classes = db.query(Class).join(Class.students).filter(
+            User.id == student_id
+        ).all()
+        
+        if existing_classes:
+            existing_class_names = [c.name for c in existing_classes]
+            if class_id not in [c.id for c in existing_classes]:
+                raise ValueError(
+                    f"Student is already assigned to class(es): {', '.join(existing_class_names)}. "
+                    "A student can only be assigned to one class."
+                )
+
         # Add student to class
         if user not in class_obj.students:
             class_obj.students.append(user)
@@ -394,3 +407,110 @@ class ClassService:
             db.refresh(class_obj)
         
         return class_obj
+
+    # ----------------------
+    # Teacher request flow
+    # ----------------------
+    @staticmethod
+    def create_teacher_subject_request(db: Session, teacher_id: int, subject_id: int, class_id: int):
+        """Create a request for a teacher to be assigned to a subject in a class.
+
+        This stores a pending request which admins can approve.
+        """
+        from ..models.subject import TeacherSubjectRequest
+
+        # Basic validation
+        teacher = db.query(User).filter(User.id == teacher_id).first()
+        if not teacher or teacher.role != "teacher":
+            raise ValueError("Teacher not found or invalid role")
+
+        subject = SubjectService.get_subject_by_id(db, subject_id)
+        if not subject:
+            raise ValueError("Subject not found")
+
+        class_obj = db.query(Class).filter(Class.id == class_id).first()
+        if not class_obj:
+            raise ValueError("Class not found")
+
+        # Check for existing approved assignment
+        existing = (
+            db.query(TeacherSubjectRequest)
+            .filter(
+                TeacherSubjectRequest.teacher_id == teacher_id,
+                TeacherSubjectRequest.subject_id == subject_id,
+                TeacherSubjectRequest.class_id == class_id,
+            )
+            .first()
+        )
+        if existing and existing.status == "pending":
+            return existing
+
+        req = TeacherSubjectRequest(
+            teacher_id=teacher_id,
+            subject_id=subject_id,
+            class_id=class_id,
+            status="pending",
+        )
+        db.add(req)
+        db.commit()
+        db.refresh(req)
+        return req
+
+    @staticmethod
+    def list_teacher_subject_requests(db: Session, status: str | None = None):
+        from ..models.subject import TeacherSubjectRequest
+
+        q = db.query(TeacherSubjectRequest)
+        if status:
+            q = q.filter(TeacherSubjectRequest.status == status)
+        return q.all()
+
+    @staticmethod
+    def approve_teacher_subject_request(db: Session, request_id: int, approver_id: int):
+        from ..models.subject import TeacherSubjectRequest, TeacherSubject
+
+        req = db.query(TeacherSubjectRequest).filter(TeacherSubjectRequest.id == request_id).first()
+        if not req:
+            raise ValueError("Request not found")
+        if req.status != "pending":
+            raise ValueError("Request is not pending")
+
+        # Create the TeacherSubject assignment if it doesn't exist
+        existing = (
+            db.query(TeacherSubject)
+            .filter(
+                TeacherSubject.teacher_id == req.teacher_id,
+                TeacherSubject.subject_id == req.subject_id,
+                TeacherSubject.class_id == req.class_id,
+            )
+            .first()
+        )
+        if not existing:
+            ts = TeacherSubject(
+                teacher_id=req.teacher_id,
+                subject_id=req.subject_id,
+                class_id=req.class_id,
+            )
+            db.add(ts)
+            db.commit()
+            db.refresh(ts)
+
+        req.status = "approved"
+        db.commit()
+        db.refresh(req)
+        return req
+
+    @staticmethod
+    def reject_teacher_subject_request(db: Session, request_id: int, approver_id: int):
+        from ..models.subject import TeacherSubjectRequest
+
+        req = db.query(TeacherSubjectRequest).filter(TeacherSubjectRequest.id == request_id).first()
+        if not req:
+            raise ValueError("Request not found")
+        if req.status != "pending":
+            raise ValueError("Request is not pending")
+
+        req.status = "rejected"
+        db.commit()
+        db.refresh(req)
+        return req

@@ -19,7 +19,8 @@ import type {
 } from "./types";
 
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+
 import { getStoredToken } from "./token";
 
 // ============================================
@@ -86,6 +87,22 @@ export const authAPI = {
 // ============================================
 
 export const usersAPI = {
+  getCurrentUser: async (token: string): Promise<User> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/me`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to get current user");
+    }
+
+    return response.json();
+  },
+
   create: async (payload: RegisterPayload, token: string): Promise<User> => {
     const response = await fetch(`${API_BASE_URL}/api/users/`, { // note trailing slash
   method: "POST",
@@ -142,7 +159,7 @@ export const usersAPI = {
 
   update: async (
     userId: number,
-    updates: { full_name?: string; password?: string; role?: string },
+    updates: { full_name?: string; password?: string; role?: string; passport?: string },
     token: string
   ): Promise<User> => {
     const response = await fetch(`${API_BASE_URL}/api/users/${userId}`, {
@@ -213,126 +230,135 @@ export const usersAPI = {
       throw new Error("Failed to fetch students");
     }
   },
-};
-// ==// ============================================
-// EXAMS API
-// ============================================
 
-export const examsAPI = {
-  // Create a new exam (teacher only)
-  create: async (payload: ExamCreate, token: string): Promise<Exam> => {
-    const response = await fetch(`${API_BASE_URL}/api/exams/`, {
-      method: "POST",
+  getTeacherAssignments: async (token: string): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/teacher-assignments`, {
+      method: "GET",
       headers: {
-        "Content-Type": "application/json",
         Authorization: `Bearer ${token}`,
       },
+    });
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to fetch teacher assignments");
+    }
+    return response.json();
+  },
+  
+  getMyAssignments: async (token: string): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/me/assignments`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to fetch my assignments");
+    }
+    return response.json();
+  },
+};
+
+
+
+export const examsAPI = {
+  create: async (payload: ExamCreate, token: string): Promise<Exam> => {
+    const res = await fetch(`${API_BASE_URL}/api/exams/`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       body: JSON.stringify(payload),
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Exam creation failed");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Exam creation failed");
     }
-
-    return response.json();
+    return res.json();
   },
 
-  // Fetch exams visible to the current user (requires token)
   list: async (token: string): Promise<Exam[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/exams/`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await fetch(`${API_BASE_URL}/api/exams/`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch exams");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to fetch exams (status ${res.status})`);
     }
-
-    return response.json();
+    return res.json();
   },
 
-  // Admin-only: fetch all exams (ignores published status)
   listAll: async (token: string): Promise<Exam[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/exams/all`, {
-      method: "GET",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-      },
+    const res = await fetch(`${API_BASE_URL}/api/exams/all`, {
+      headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch all exams");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to fetch all exams (status ${res.status})`);
     }
-
-    return response.json();
+    return res.json();
   },
 
-  // Get a single exam by ID (token optional if public)
   getById: async (examId: number, token?: string): Promise<Exam> => {
     const headers: Record<string, string> = { "Content-Type": "application/json" };
     if (token) headers.Authorization = `Bearer ${token}`;
 
-    const response = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
-      method: "GET",
-      headers,
-    });
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to fetch exam");
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, { headers });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to fetch exam (status ${res.status})`);
     }
-
-    return response.json();
+    return res.json();
   },
 
-  // Import questions from document (teacher only)
-  importFromDocument: async (
-    examId: number,
-    file: File,
-    token: string
-  ): Promise<{ success: boolean; questions_imported: number; exam_id: number }> => {
-    const formData = new FormData();
-    formData.append("file", file);
-
-    const response = await fetch(
-      `${API_BASE_URL}/api/exams/import-from-document/${examId}`,
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      }
-    );
-
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Document import failed");
-    }
-
-    return response.json();
-  },
-
-  // Delete an exam (teacher/admin only)
   delete: async (examId: number, token: string) => {
-    const response = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
       method: "DELETE",
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.detail || "Failed to delete exam");
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to delete exam (status ${res.status})`);
     }
+    return res.json();
+  },
 
-    return response.json();
+  importFromDocument: async (examId: number, file: File, token: string) => {
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const res = await fetch(`${API_BASE_URL}/api/exams/import-from-document/${examId}`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` }, // Content-Type auto
+      body: formData,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to import questions (status ${res.status})`);
+    }
+    return res.json();
+  },
+
+  togglePublish: async (examId: number, publish: boolean, token: string): Promise<Exam> => {
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}/publish`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ published: publish }),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to update exam (status ${res.status})`);
+    }
+    return res.json();
   },
 };
 
@@ -359,21 +385,18 @@ export const questionsAPI = {
     return response.json();
   },
 
-  getForExam: async (examId: number): Promise<Question[]> => {
-    const response = await fetch(
-      `${API_BASE_URL}/api/questions/exam/${examId}`,
-      {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      }
-    );
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch questions");
+ // Get all questions for an exam
+  getForExam: async (examId: number, token: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}/questions`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      throw new Error(errData.detail || "Failed to fetch questions");
     }
-
-    return response.json();
+    return res.json(); // should return an array of questions
   },
+
 
   uploadImage: async (
     file: File,
@@ -604,7 +627,7 @@ export const classesAPI = {
       "Content-Type": "application/json",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ student_id: studentId, class_id: classId }),
+    body: JSON.stringify({ student_id: studentId }),
   });
   if (!response.ok) throw new Error("Failed to assign student to class");
   return response.json();
@@ -638,10 +661,76 @@ export const classesAPI = {
     body: JSON.stringify({
       teacher_id: teacherId,
       subject_id: subjectId,
-      class_id: classId, // include this
     }),
   });
 
   if (!response.ok) throw new Error("Failed to assign teacher to subject");
   return response.json();
-}};
+},
+
+  // Teacher request to teach a subject in a class
+  requestTeacherSubject: async (classId: number, subjectId: number, token: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/request-teacher-subject`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ subject_id: subjectId }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to request subject assignment");
+    }
+    return response.json();
+  },
+
+  // Admin: list pending teacher requests
+  listTeacherRequests: async (token: string): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to fetch teacher requests");
+    }
+    return response.json();
+  },
+
+  // Admin: approve a teacher request
+  approveTeacherRequest: async (requestId: number, token: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests/${requestId}/approve`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to approve request");
+    }
+    return response.json();
+  },
+
+  // Admin: reject a teacher request
+  rejectTeacherRequest: async (requestId: number, token: string): Promise<any> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/teacher-requests/${requestId}/reject`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.detail || "Failed to reject request");
+    }
+    return response.json();
+  },
+};

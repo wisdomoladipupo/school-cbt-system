@@ -40,8 +40,10 @@ export default function AdminClassManagement() {
   const [classDetails, setClassDetails] = useState<ClassWithSubjects | null>(null);
   const [subjectsWithTeachers, setSubjectsWithTeachers] = useState<SubjectWithTeachers[]>([]);
   const [allSubjects, setAllSubjects] = useState<Subject[]>([]);
+  const [teacherAssignments, setTeacherAssignments] = useState<any[]>([]);
   const [isSubjectsModalOpen, setIsSubjectsModalOpen] = useState(false);
   const [selectedSubjectIds, setSelectedSubjectIds] = useState<number[]>([]);
+  
 
   const token = getStoredToken();
   const messageText = typeof message === "string" ? message : JSON.stringify(message);
@@ -107,6 +109,8 @@ export default function AdminClassManagement() {
     }
   }, []);
 
+  // Teacher requests feature removed from admin UI
+
   // ----------------------
   // EFFECTS
   // ----------------------
@@ -119,6 +123,15 @@ export default function AdminClassManagement() {
     if (token) {
       fetchStudents();
       fetchTeachers();
+      // fetch teacher assignments for admin overview of teacher->subject mappings
+      (async () => {
+        try {
+          const ta = await usersAPI.getTeacherAssignments(token);
+          setTeacherAssignments(ta);
+        } catch (err) {
+          console.error("Failed to fetch teacher assignments:", err);
+        }
+      })();
     }
   }, [token, fetchStudents, fetchTeachers]);
 
@@ -131,6 +144,17 @@ export default function AdminClassManagement() {
   useEffect(() => {
     fetchAllSubjects();
   }, [fetchAllSubjects]);
+
+  // Load class details when switching to details tab
+  useEffect(() => {
+    if (activeTab === "details" && selectedClass !== null) {
+      fetchClassDetails(selectedClass);
+    }
+    // When opening the Teachers tab, ensure class details are fresh
+    if (activeTab === "teachers" && selectedClass !== null) {
+      fetchClassDetails(selectedClass);
+    }
+  }, [activeTab]);
 
   // ----------------------
   // SUBJECT MODAL
@@ -159,7 +183,9 @@ export default function AdminClassManagement() {
       setClassDetails(updated);
       setMessage("Success! Class subjects updated.");
       setIsSubjectsModalOpen(false);
+      // Refresh details and global subjects list
       fetchClassDetails(selectedClass);
+      fetchAllSubjects();
     } catch (error) {
       setMessage(`Error: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
@@ -208,6 +234,22 @@ export default function AdminClassManagement() {
 
     setLoading(true);
     try {
+      // If subject isn't assigned to the class yet, add it automatically
+      const classSubjIds = classDetails?.subjects?.map((s) => s.id) || [];
+      if (!classSubjIds.includes(selectedSubject)) {
+        try {
+          setMessage("Subject not assigned to class — adding it now...");
+          await classesAPI.addSubjectToClass(selectedClass, selectedSubject, token);
+          // Refresh class details so UI reflects the change
+          await fetchClassDetails(selectedClass);
+          await fetchAllSubjects();
+          setMessage("Subject added to class. Proceeding to assign teacher...");
+        } catch (err) {
+          setMessage(`Failed to add subject to class: ${err instanceof Error ? err.message : String(err)}`);
+          setLoading(false);
+          return;
+        }
+      }
       const result = await classesAPI.assignTeacherToSubject(
         selectedClass,
         selectedTeacher,
@@ -225,6 +267,11 @@ export default function AdminClassManagement() {
       setLoading(false);
     }
   };
+
+  // ----------------------
+  // TEACHER REQUEST HANDLERS
+  // ----------------------
+  // Approve/reject handlers removed (teacher-request flow disabled in UI)
 
   // ----------------------
   // RENDER
@@ -313,6 +360,7 @@ export default function AdminClassManagement() {
             >
               Class Details
             </button>
+            {/* Teacher Requests tab removed */}
           </div>
 
           {/* Students Tab */}
@@ -431,11 +479,14 @@ export default function AdminClassManagement() {
                       className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:outline-none"
                     >
                       <option value="">-- Choose a subject --</option>
-                      {classDetails?.subjects?.map((subj: Subject) => (
-                        <option key={subj.id} value={subj.id}>
-                          {subj.name} ({subj.code})
-                        </option>
-                      ))}
+                      {allSubjects.map((subj: Subject) => {
+                        const assigned = !!classDetails?.subjects?.some((s) => s.id === subj.id);
+                        return (
+                          <option key={subj.id} value={subj.id}>
+                            {subj.name} ({subj.code}){assigned ? " — assigned" : ""}
+                          </option>
+                        );
+                      })}
                     </select>
                   </div>
 
@@ -486,6 +537,29 @@ export default function AdminClassManagement() {
                       )}
                     </div>
                   ))}
+                </div>
+              )}
+
+              {/* All Teachers Assignments (global view) */}
+              {teacherAssignments.length > 0 && (
+                <div className="mt-6">
+                  <h3 className="font-semibold text-gray-800 mb-3">All Teacher Assignments</h3>
+                  <div className="space-y-3">
+                    {teacherAssignments.map((t) => (
+                      <div key={t.teacher_id} className="p-3 bg-white border border-gray-200 rounded-lg">
+                        <p className="font-medium text-gray-900">{t.teacher_name} <span className="text-xs text-gray-500">({t.teacher_email})</span></p>
+                        {t.assignments && t.assignments.length > 0 ? (
+                          <ul className="mt-2 list-disc list-inside text-sm text-gray-700">
+                            {t.assignments.map((a: any, idx: number) => (
+                              <li key={idx}>{a.subject_name} — {a.class_name}</li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-gray-500 italic">No assignments</p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
@@ -573,6 +647,8 @@ export default function AdminClassManagement() {
               </div>
             </div>
           )}
+
+          {/* Teacher requests UI removed from admin view */}
         </>
       )}
       {isSubjectsModalOpen && (

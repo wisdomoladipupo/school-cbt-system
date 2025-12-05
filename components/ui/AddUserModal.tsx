@@ -84,6 +84,7 @@ export default function AddUserModal({
             password,
             role,
             student_class: role === "teacher" ? undefined : "General",
+            passport,
           },
           token
         );

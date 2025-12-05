@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Editor } from "@tinymce/tinymce-react";
-import {  getStoredToken,  } from "@/lib/api";
+import { getStoredToken } from "@/lib/api";
 import { questionsAPI, classesAPI, examsAPI } from "@/lib/api/api";
 
 interface Question {
@@ -13,25 +13,29 @@ interface Question {
 }
 
 export default function CreateExamBuilder() {
-  const [questions, setQuestions] = useState<Question[]>([
-    { question: "", options: ["", "", "", ""], correctAnswer: null },
-  ]);
-  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>(
-    {}
-  );
   const token = getStoredToken();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [duration, setDuration] = useState<number>(30);
+  const [duration, setDuration] = useState(30);
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
   const [classSubjects, setClassSubjects] = useState<any[]>([]);
   const [selectedSubject, setSelectedSubject] = useState<number | null>(null);
-  const [saving, setSaving] = useState(false);
 
+  const [questions, setQuestions] = useState<Question[]>([
+    { question: "", options: ["", "", "", ""], correctAnswer: null },
+  ]);
+  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>({});
+  const [saving, setSaving] = useState(false);
+  const [importingFile, setImportingFile] = useState(false);
+  const [createdExamId, setCreatedExamId] = useState<number | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load classes
   useEffect(() => {
-    const fetch = async () => {
+    const fetchClasses = async () => {
       try {
         const c = await classesAPI.listClasses();
         setClasses(c);
@@ -39,9 +43,10 @@ export default function CreateExamBuilder() {
         console.error("Failed to load classes:", err);
       }
     };
-    fetch();
+    fetchClasses();
   }, []);
 
+  // Load subjects for selected class
   useEffect(() => {
     const loadSubjects = async () => {
       if (!selectedClass) {
@@ -59,99 +64,70 @@ export default function CreateExamBuilder() {
     loadSubjects();
   }, [selectedClass]);
 
-  function addQuestion() {
-    setQuestions([
-      ...questions,
-      { question: "", options: ["", "", "", ""], correctAnswer: null },
-    ]);
-  }
+  // -------------------- Question Handlers --------------------
+  const addQuestion = () =>
+    setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: null }]);
 
-  function removeQuestion(index: number) {
+  const removeQuestion = (index: number) => {
     if (questions.length === 1) return;
     setQuestions(questions.filter((_, i) => i !== index));
-  }
+  };
 
-  function updateQuestionText(index: number, value: string) {
+  const updateQuestionText = (index: number, value: string) => {
     const updated = [...questions];
     updated[index].question = value;
     setQuestions(updated);
-  }
+  };
 
-  function updateOption(qIndex: number, optIndex: number, value: string) {
+  const updateOption = (qIndex: number, optIndex: number, value: string) => {
     const updated = [...questions];
     updated[qIndex].options[optIndex] = value;
     setQuestions(updated);
-  }
+  };
 
-  function setCorrect(qIndex: number, optIndex: number) {
+  const setCorrect = (qIndex: number, optIndex: number) => {
     const updated = [...questions];
     updated[qIndex].correctAnswer = optIndex;
     setQuestions(updated);
-  }
+  };
 
-  async function handleImageUpload(index: number, file: File) {
-    if (!token) {
-      alert("Please login first");
-      return;
-    }
-
+  const handleImageUpload = async (index: number, file: File) => {
+    if (!token) return alert("Please login first");
     try {
       setUploadingImage({ ...uploadingImage, [index]: true });
       const result = await questionsAPI.uploadImage(file, token);
-
       const updated = [...questions];
       updated[index].imageUrl = result.image_url;
       setQuestions(updated);
     } catch (error) {
-      alert(
-        `Upload failed: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
+      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
     } finally {
       setUploadingImage({ ...uploadingImage, [index]: false });
     }
-  }
+  };
 
-  function removeImage(index: number) {
+  const removeImage = (index: number) => {
     const updated = [...questions];
     updated[index].imageUrl = undefined;
     setQuestions(updated);
-  }
+  };
 
-  async function submitExam() {
-    if (!title.trim()) {
-      alert("Please provide an exam title");
-      return;
-    }
-    if (!selectedClass) {
-      alert("Please select a class for this exam");
-      return;
-    }
-    if (!selectedSubject) {
-      alert("Please select a subject for this exam");
-      return;
-    }
+  // -------------------- Exam Submission --------------------
+  const submitExam = async () => {
+    if (!title.trim()) return alert("Please provide an exam title");
+    if (!selectedClass) return alert("Please select a class");
+    if (!selectedSubject) return alert("Please select a subject");
 
     for (const q of questions) {
-      if (!q.question.trim()) {
-        alert("A question is empty!");
-        return;
-      }
-      if (q.correctAnswer === null) {
-        alert("Some questions have no correct answer selected!");
-        return;
-      }
+      if (!q.question.trim()) return alert("A question is empty!");
+      if (q.correctAnswer === null)
+        return alert("Some questions have no correct answer selected!");
     }
-
-    if (!token) {
-      alert("Please login to save the exam");
-      return;
-    }
+    if (!token) return alert("Please login to save the exam");
 
     setSaving(true);
     try {
-      // create exam
+      // Create exam
       const examPayload = {
         title,
         description,
@@ -160,49 +136,104 @@ export default function CreateExamBuilder() {
         class_id: selectedClass,
         subject_id: selectedSubject,
       };
-
       const createdExam = await examsAPI.create(examPayload as any, token);
+      setCreatedExamId(createdExam.id);
 
-      // create questions
+      // Create questions
       for (const q of questions) {
-        const payload = {
-          exam_id: createdExam.id,
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer as number,
-          marks: 1,
-          image_url: q.imageUrl,
-        };
-        try {
-          await questionsAPI.create(payload as any, token);
-        } catch (err) {
-          console.error("Failed to create question:", err);
-        }
+        await questionsAPI.create(
+          {
+            exam_id: createdExam.id,
+            text: q.question,
+            options: q.options,
+            correct_answer: q.correctAnswer as number,
+            marks: 1,
+            image_url: q.imageUrl,
+          } as any,
+          token
+        );
       }
 
       alert("Exam and questions saved successfully");
-      // reset form
-      setTitle("");
-      setDescription("");
-      setDuration(30);
-      setQuestions([
-        { question: "", options: ["", "", "", ""], correctAnswer: null },
-      ]);
-      setSelectedClass(null);
-      setSelectedSubject(null);
+      resetForm();
     } catch (err) {
       console.error("Failed to save exam:", err);
       alert(err instanceof Error ? err.message : "Failed to save exam");
     } finally {
       setSaving(false);
     }
-  }
+  };
 
+  const resetForm = () => {
+    setTitle("");
+    setDescription("");
+    setDuration(30);
+    setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: null }]);
+    setSelectedClass(null);
+    setSelectedSubject(null);
+    setCreatedExamId(null);
+  };
+
+  // -------------------- Import Document --------------------
+  const handleImportClick = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImportDocument = async (file: File) => {
+    if (!token) return alert("Please login first");
+
+    try {
+      setImportingFile(true);
+
+      let examId = createdExamId;
+
+      // Auto-create exam if not yet created
+      if (!examId) {
+        if (!title.trim()) return alert("Please provide an exam title");
+        if (!selectedClass) return alert("Please select a class");
+        if (!selectedSubject) return alert("Please select a subject");
+
+        const examPayload = {
+          title,
+          description,
+          duration_minutes: duration,
+          published: false,
+          class_id: selectedClass,
+          subject_id: selectedSubject,
+        };
+
+        const createdExam = await examsAPI.create(examPayload as any, token);
+        examId = createdExam.id;
+        setCreatedExamId(examId);
+      }
+
+      // Import questions from Word document
+      const result = await examsAPI.importFromDocument(examId, file, token);
+      alert(`Imported ${result.questions_imported} questions successfully!`);
+
+      // Refresh questions in builder
+      const updatedQuestions = await questionsAPI.getForExam(examId, token);
+      const mapped = updatedQuestions.map((q: any) => ({
+        question: q.text,
+        options: q.options,
+        correctAnswer: q.correct_answer,
+        imageUrl: q.image_url,
+      }));
+      setQuestions(mapped);
+    } catch (err) {
+      console.error("Import failed:", err);
+      alert(err instanceof Error ? err.message : "Import failed");
+    } finally {
+      setImportingFile(false);
+    }
+  };
+
+  // -------------------- JSX --------------------
   return (
     <div className="space-y-8 p-6 bg-gray-50 min-h-screen">
       <h1 className="text-3xl font-bold text-gray-900">Exam Builder</h1>
 
-      {/* Exam metadata: title, description, duration, class, subject */}
+      {/* Exam Metadata */}
       <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 gap-3">
           <input
@@ -229,9 +260,7 @@ export default function CreateExamBuilder() {
             <select
               value={selectedClass ?? ""}
               onChange={(e) =>
-                setSelectedClass(
-                  e.target.value ? parseInt(e.target.value) : null
-                )
+                setSelectedClass(e.target.value ? parseInt(e.target.value) : null)
               }
               className="flex-1 p-2 border rounded text-black"
             >
@@ -245,9 +274,7 @@ export default function CreateExamBuilder() {
             <select
               value={selectedSubject ?? ""}
               onChange={(e) =>
-                setSelectedSubject(
-                  e.target.value ? parseInt(e.target.value) : null
-                )
+                setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)
               }
               className="flex-1 p-2 border rounded text-black"
               disabled={!classSubjects.length}
@@ -263,6 +290,22 @@ export default function CreateExamBuilder() {
         </div>
       </div>
 
+      {/* Import Document */}
+      <label
+        className="cursor-pointer bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+        onClick={handleImportClick}
+      >
+        {importingFile ? "Importing..." : "Import Exam Document"}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept=".doc,.docx"
+          className="hidden"
+          onChange={(e) => e.target.files?.[0] && handleImportDocument(e.target.files[0])}
+        />
+      </label>
+
+      {/* Questions */}
       {questions.map((q, index) => (
         <div
           key={index}
@@ -282,7 +325,7 @@ export default function CreateExamBuilder() {
             )}
           </div>
 
-          {/* QUESTION EDITOR */}
+          {/* Question Editor */}
           <Editor
             apiKey={"a577i0klhoyk4olpmachbpkazs6i4hl994d4wfv9ej4udnyj"}
             init={{
@@ -298,57 +341,11 @@ export default function CreateExamBuilder() {
             onEditorChange={(content) => updateQuestionText(index, content)}
           />
 
-          {/* IMAGE UPLOAD */}
-          <div className="border-2 border-dashed border-gray-300 rounded-lg p-4 bg-gray-50">
-            {q.imageUrl ? (
-              <div className="space-y-2">
-                <p className="text-sm font-medium text-gray-700">
-                  Question Image:
-                </p>
-                <img
-                  src={`http://localhost:8000${q.imageUrl}`}
-                  alt="Question"
-                  className="max-h-40 rounded"
-                />
-                <button
-                  onClick={() => removeImage(index)}
-                  className="text-red-600 hover:text-red-800 text-sm font-medium"
-                >
-                  Remove Image
-                </button>
-              </div>
-            ) : (
-              <label className="cursor-pointer">
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      handleImageUpload(index, e.target.files[0]);
-                    }
-                  }}
-                  disabled={uploadingImage[index]}
-                  className="hidden"
-                />
-                <div className="text-center py-2">
-                  <p className="text-gray-600">
-                    {uploadingImage[index]
-                      ? "Uploading..."
-                      : "Click to upload an image for this question"}
-                  </p>
-                </div>
-              </label>
-            )}
-          </div>
-
-          {/* OPTIONS */}
+          {/* Options */}
           <div className="space-y-3">
             <h3 className="font-semibold text-black">Options</h3>
             {q.options.map((opt, optIndex) => (
-              <div
-                key={optIndex}
-                className="flex text-black items-center gap-3"
-              >
+              <div key={optIndex} className="flex text-black items-center gap-3">
                 <input
                   type="radio"
                   name={`correct-${index}`}
@@ -359,9 +356,7 @@ export default function CreateExamBuilder() {
                 <input
                   type="text"
                   value={opt}
-                  onChange={(e) =>
-                    updateOption(index, optIndex, e.target.value)
-                  }
+                  onChange={(e) => updateOption(index, optIndex, e.target.value)}
                   placeholder={`Option ${optIndex + 1}`}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
@@ -371,6 +366,7 @@ export default function CreateExamBuilder() {
         </div>
       ))}
 
+      {/* Actions */}
       <div className="flex flex-wrap gap-4">
         <button
           onClick={addQuestion}
@@ -378,7 +374,6 @@ export default function CreateExamBuilder() {
         >
           + Add Another Question
         </button>
-
         <button
           onClick={submitExam}
           className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"

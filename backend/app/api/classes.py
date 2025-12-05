@@ -11,11 +11,14 @@ from ..schemas.subject import (
     AssignStudentToClass,
     AssignTeacherToClass,
     AssignTeacherToSubject,
+    TeacherRequestCreate,
+    TeacherRequestOut,
     TeacherSubjectOut,
 )
 from ..services.subject_service import SubjectService, ClassService
 from ..core.security import decode_access_token
 from ..models.user import User
+from ..api.deps import require_role, get_current_user
 from ..models.subject import NIGERIAN_SCHOOL_SUBJECTS, SCHOOL_LEVEL_DISPLAY
 import logging
 
@@ -82,7 +85,7 @@ def create_subject(subject: SubjectCreate, db: Session = Depends(get_db)):
 # ============================================
 
 @router.post("", response_model=ClassOut)
-def create_class(class_data: ClassCreate, db: Session = Depends(get_db)):
+def create_class(class_data: ClassCreate, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
     """Create a new class with subjects auto-populated for its level."""
     try:
         return ClassService.create_class(db, class_data)
@@ -132,7 +135,7 @@ def get_classes_by_level(level: str, db: Session = Depends(get_db)):
 
 
 @router.put("/{class_id}", response_model=ClassOut)
-def update_class(class_id: int, data: ClassUpdate, db: Session = Depends(get_db)):
+def update_class(class_id: int, data: ClassUpdate, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
     """Update class name, level, and subjects."""
     try:
         db_class = ClassService.get_class_by_id(db, class_id)
@@ -172,6 +175,7 @@ def assign_student_to_class(
     class_id: int,
     payload: AssignStudentToClass,
     db: Session = Depends(get_db),
+    current_user = Depends(require_role("admin")),
 ):
     """Assign a student to a class and auto-create exams for all subjects"""
     try:
@@ -185,6 +189,8 @@ def assign_student_to_class(
         if not student:
             raise HTTPException(status_code=404, detail="Student not found")
 
+        # Only admin may assign students to classes
+        # (Enforced at the API layer by requiring admin role)
         result = ClassService.assign_student_to_class(
             db, payload.student_id, class_id
         )
@@ -229,6 +235,7 @@ def assign_teacher_to_class(
     class_id: int,
     payload: AssignTeacherToClass,
     db: Session = Depends(get_db),
+    current_user = Depends(require_role("admin")),
 ):
     """Assign a teacher to a class"""
     try:
@@ -291,6 +298,7 @@ def assign_teacher_to_subject(
     class_id: int,
     payload: AssignTeacherToSubject,
     db: Session = Depends(get_db),
+    current_user = Depends(require_role("admin")),
 ):
     """Assign a teacher to a subject in a class"""
     try:
@@ -351,8 +359,65 @@ def get_subject_teachers(
         raise HTTPException(status_code=500, detail="Failed to fetch subject teachers")
 
 
+# ----------------------------
+# Teacher request endpoints
+# ----------------------------
+
+
+@router.post("/{class_id}/request-teacher-subject", response_model=TeacherRequestOut)
+def request_teacher_subject(
+    class_id: int,
+    payload: TeacherRequestCreate,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role("teacher")),
+):
+    """Teacher requests to be assigned to a subject for a class (creates a pending request)."""
+    try:
+        req = ClassService.create_teacher_subject_request(db, current_user.id, payload.subject_id, class_id)
+        return req
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error creating teacher subject request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to create request")
+
+
+@router.get("/teacher-requests")
+def list_teacher_requests(status: str | None = None, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
+    """Admin: list teacher subject requests (filter by status optional)."""
+    try:
+        return ClassService.list_teacher_subject_requests(db, status)
+    except Exception as e:
+        logger.error(f"Error listing teacher requests: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to list requests")
+
+
+@router.post("/teacher-requests/{request_id}/approve")
+def approve_teacher_request(request_id: int, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
+    try:
+        req = ClassService.approve_teacher_subject_request(db, request_id, current_user.id)
+        return req
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error approving teacher request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to approve request")
+
+
+@router.post("/teacher-requests/{request_id}/reject")
+def reject_teacher_request(request_id: int, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
+    try:
+        req = ClassService.reject_teacher_subject_request(db, request_id, current_user.id)
+        return req
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        logger.error(f"Error rejecting teacher request: {str(e)}")
+        raise HTTPException(status_code=500, detail="Failed to reject request")
+
+
 @router.put("/{class_id}/subjects", response_model=ClassOut)
-def update_class_subjects(class_id: int, subject_ids: list[int], db: Session = Depends(get_db)):
+def update_class_subjects(class_id: int, subject_ids: list[int], db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
     """Update subjects for a class. Replaces all current subjects."""
     try:
         db_class = ClassService.update_class_subjects(db, class_id, subject_ids)
@@ -365,7 +430,7 @@ def update_class_subjects(class_id: int, subject_ids: list[int], db: Session = D
 
 
 @router.post("/{class_id}/subjects/{subject_id}", response_model=ClassOut)
-def add_subject_to_class(class_id: int, subject_id: int, db: Session = Depends(get_db)):
+def add_subject_to_class(class_id: int, subject_id: int, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
     """Add a subject to a class"""
     try:
         db_class = ClassService.add_subject_to_class(db, class_id, subject_id)
@@ -378,7 +443,7 @@ def add_subject_to_class(class_id: int, subject_id: int, db: Session = Depends(g
 
 
 @router.delete("/{class_id}/subjects/{subject_id}", response_model=ClassOut)
-def remove_subject_from_class(class_id: int, subject_id: int, db: Session = Depends(get_db)):
+def remove_subject_from_class(class_id: int, subject_id: int, db: Session = Depends(get_db), current_user = Depends(require_role("admin"))):
     """Remove a subject from a class"""
     try:
         db_class = ClassService.remove_subject_from_class(db, class_id, subject_id)

@@ -4,11 +4,9 @@ import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
 import DashboardLayout from "../../dashboard/layout";
 import {
-  examsAPI,
-  questionsAPI,
-  resultsAPI,
   getStoredToken,
 } from "../../../lib/api";
+import { examsAPI, questionsAPI, resultsAPI } from "../../../lib/api/api";
 import Timer, { TimerHandle } from "../../../components/cbt/Timer";
 import QuestionCard from "../../../components/cbt/QuestionCard";
 
@@ -52,7 +50,7 @@ export default function TakeExamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(string | number | null)[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  
 
   const timerRef = useRef<TimerHandle>(null!);
 
@@ -131,14 +129,15 @@ export default function TakeExamPage() {
 
       const payload = {
         exam_id: examId,
-        answers: exam.questions.map((_, i) => ({
-          question_id: i,
+        answers: exam.questions.map((q, i) => ({
+          question_id: q.id, // <-- use actual question ID
           answer_index: answers[i] === null ? -1 : Number(answers[i]),
         })),
       };
 
-      await resultsAPI.submit(payload, token);
-      setSubmitted(true);
+      const res = await resultsAPI.submit(payload, token);
+      // Redirect to submitted confirmation page
+      router.push(`/exam/submitted/${examId}`);
     } catch (error) {
       console.error("Failed to submit exam:", error);
       alert("Failed to submit exam. Please try again.");
@@ -158,33 +157,7 @@ export default function TakeExamPage() {
     );
   }
 
-  if (submitted) {
-    const { score, max } = computeScore();
-    return (
-      <DashboardLayout>
-        <div className="space-y-6 p-6">
-          <h1 className="text-2xl font-semibold">Exam Submitted</h1>
-          <p className="text-lg">
-            You scored {score} / {max}
-          </p>
-          <div className="flex gap-2">
-            <button
-              className="px-4 py-2 bg-blue-600 text-white rounded"
-              onClick={() => router.push("/results")}
-            >
-              View Results
-            </button>
-            <button
-              className="px-4 py-2 bg-gray-200 rounded"
-              onClick={() => router.push("/dashboard/student")}
-            >
-              Back to Dashboard
-            </button>
-          </div>
-        </div>
-      </DashboardLayout>
-    );
-  }
+  // After submission the user is redirected to the submitted confirmation page
 
   return (
     <DashboardLayout>

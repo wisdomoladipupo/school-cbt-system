@@ -1,15 +1,24 @@
 from sqlalchemy.orm import Session
 from ..models.exam import Exam
 from ..models.question import Question
+from ..models.subject import TeacherSubject
 from ..schemas.exam import ExamCreate
 from typing import List, Optional
+from docx import Document
+from fastapi import UploadFile
+from sqlalchemy import or_, and_
+import tempfile
+from io import BytesIO
+import re
 
+
+# CREATE EXAM
 def create_exam(db: Session, creator_id: int, exam_in: ExamCreate):
     exam = Exam(
         title=exam_in.title,
         description=exam_in.description,
         duration_minutes=exam_in.duration_minutes,
-        published=exam_in.published if exam_in.published is not None else False,  # default to False
+        published=exam_in.published if exam_in.published is not None else False,
         created_by=creator_id,
         class_id=getattr(exam_in, "class_id", None),
         subject_id=getattr(exam_in, "subject_id", None),
@@ -19,16 +28,104 @@ def create_exam(db: Session, creator_id: int, exam_in: ExamCreate):
     db.refresh(exam)
     return exam
 
+# GET EXAM
 def get_exam(db: Session, exam_id: int):
     return db.query(Exam).filter(Exam.id == exam_id).first()
 
-def list_exams(db: Session, published_only: Optional[bool] = True):
-    q = db.query(Exam)
+# LIST EXAMS
+def list_exams(db: Session, published_only: bool = True, teacher_id: Optional[int] = None):
+    """List exams, optionally filtered to published ones only.
+
+    If `teacher_id` is provided the results are restricted to exams that
+    belong to classes or subjects the teacher is assigned to.
+    """
+    query = db.query(Exam)
+
+    # If teacher_id provided, restrict to the teacher's assigned classes/subjects
+    if teacher_id is not None:
+        ts = db.query(TeacherSubject).filter(TeacherSubject.teacher_id == teacher_id).all()
+
+        # If teacher has no assignments, return empty list early
+        if not ts:
+            return []
+
+        # Build OR of (class_id == X AND subject_id == Y) for each assignment
+        conds = []
+        for t in ts:
+            # teacher_subject stores both class_id and subject_id (non-nullable)
+            conds.append(and_(Exam.class_id == t.class_id, Exam.subject_id == t.subject_id))
+
+        query = query.filter(or_(*conds))
+
     if published_only:
-        q = q.filter(Exam.published == True)
-    return q.all()
+        query = query.filter(Exam.published == True)
+    return query.all()
+
+
+def teacher_can_access_exam(db: Session, teacher_id: int, exam: Exam) -> bool:
+    """Return True if the teacher is allowed to manage/access the given exam.
+
+    A teacher can access the exam if they are assigned to the exam's class
+    or to the exam's subject for that class (via `teacher_subjects`).
+    """
+    if not exam:
+        return False
+
+    # Require an exact teacher_subject match for (class_id, subject_id)
+    if exam.class_id is not None and exam.subject_id is not None:
+        found = (
+            db.query(TeacherSubject)
+            .filter(
+                TeacherSubject.teacher_id == teacher_id,
+                TeacherSubject.class_id == exam.class_id,
+                TeacherSubject.subject_id == exam.subject_id,
+            )
+            .first()
+        )
+        return bool(found)
+
+    # If exam only has class_id, allow if teacher assigned to that class
+    if exam.class_id is not None:
+        found = db.query(TeacherSubject).filter(TeacherSubject.teacher_id == teacher_id, TeacherSubject.class_id == exam.class_id).first()
+        return bool(found)
+
+    # Otherwise deny
+    return False
+
+# DELETE EXAM
+def delete_exam(db: Session, exam_id: int) -> bool:
+    """Delete an exam and return True if successful"""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        return False
+    db.delete(exam)
+    db.commit()
+    return True
+
+# UPDATE EXAM PUBLISHED STATUS
+def update_exam_published(db: Session, exam_id: int, published: bool):
+    """Update the published status of an exam"""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        return None
+    exam.published = published
+    db.commit()
+    db.refresh(exam)
+    return exam
+
+# GET QUESTIONS
+def get_questions_for_exam(db: Session, exam_id: int):
+    return db.query(Question).filter(Question.exam_id == exam_id).all()
 
 def add_question(db: Session, creator_id: int, exam_id: int, text: str, options: list, correct_answer: int, marks: int = 1, image_url: str = None):
+    if not options:
+        raise ValueError("Options cannot be empty")
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise ValueError("Exam not found")
+    if correct_answer < 0 or correct_answer >= len(options):
+        raise ValueError("correct_answer index out of range")
+
     q = Question(
         exam_id=exam_id,
         text=text,
@@ -38,10 +135,132 @@ def add_question(db: Session, creator_id: int, exam_id: int, text: str, options:
         image_url=image_url,
         created_by=creator_id
     )
-    db.add(q)
-    db.commit()
-    db.refresh(q)
+    try:
+        db.add(q)
+        db.commit()
+        db.refresh(q)
+    except Exception:
+        db.rollback()
+        raise
     return q
 
-def get_questions_for_exam(db: Session, exam_id: int):
-    return db.query(Question).filter(Question.exam_id == exam_id).all()
+
+# existing functions...
+
+def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, creator_id: int):
+    """
+    Parse a docx from bytes and create questions for the given exam.
+    Supports multiple question formats:
+    - Numbered: "1. Question text" / "A. Option" / "Answer: A"
+    - Bullet: "• Question" / "A) Option" / "Answer: A"
+    
+    Returns dict with success status and number of questions created.
+    """
+    questions_created = 0
+    questions_skipped = 0
+    errors = []
+
+    # Basic validations
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        raise ValueError("Exam not found")
+
+    try:
+        doc = Document(BytesIO(file_bytes))
+    except Exception as e:
+        raise ValueError(f"Failed to parse document: {str(e)}")
+
+    # Collect non-empty paragraph texts
+    paras = [p.text.strip() for p in doc.paragraphs if p.text and p.text.strip()]
+
+    if not paras:
+        raise ValueError("Document contains no questions")
+
+    # Parse questions using state machine
+    i = 0
+    while i < len(paras):
+        line = paras[i]
+
+        # Detect question start (numbered, bullet, or plain text)
+        is_question = False
+        question_text = line
+        
+        # Check for numbered question (1., 1), etc.)
+        num_match = re.match(r"^\s*\d+[\.\)]\s*(.+)$", line)
+        if num_match:
+            question_text = num_match.group(1).strip()
+            is_question = True
+        # Check for bullet question (•, -, *, etc.)
+        elif re.match(r"^\s*[•\-\*]\s+(.+)$", line):
+            is_question = True
+        # Plain text question (if not an option or answer line)
+        elif not re.match(r"^\s*[A-Da-d][\.\)]\s", line) and not line.lower().startswith("answer"):
+            is_question = True
+        
+        if is_question:
+            i += 1
+
+            # Accumulate multi-line question text
+            while i < len(paras):
+                next_line = paras[i]
+                # Stop if we hit options
+                if re.match(r"^\s*[A-Da-d][\.\)]\s", next_line):
+                    break
+                # Stop if we hit answer
+                if next_line.lower().startswith("answer"):
+                    break
+                # Stop if we hit new question
+                if re.match(r"^\s*\d+[\.\)]\s", next_line) or next_line.startswith("•"):
+                    break
+                question_text += " " + next_line.strip()
+                i += 1
+
+            # Collect options
+            options = []
+            while i < len(paras):
+                opt_match = re.match(r"^\s*([A-Da-d])[\.\)]\s*(.+)$", paras[i])
+                if opt_match:
+                    options.append(opt_match.group(2).strip())
+                    i += 1
+                else:
+                    break
+
+            # Look for answer
+            correct_answer = None
+            if i < len(paras):
+                ans_line = paras[i].strip()
+                ans_match = re.search(r"[Aa]nswer\s*[:\-]?\s*([A-Da-d])", ans_line)
+                if ans_match:
+                    char = ans_match.group(1).upper()
+                    correct_answer = ord(char) - 65  # A->0, B->1, etc.
+                    i += 1
+
+            # Create question if we have required data
+            if len(options) >= 2 and correct_answer is not None:
+                try:
+                    add_question(
+                        db,
+                        creator_id=creator_id,
+                        exam_id=exam_id,
+                        text=question_text.strip(),
+                        options=options,
+                        correct_answer=correct_answer,
+                        marks=1
+                    )
+                    questions_created += 1
+                except Exception as e:
+                    questions_skipped += 1
+                    errors.append(f"Q: {question_text[:50]}... - {str(e)}")
+            elif len(options) > 0 or question_text:
+                questions_skipped += 1
+                reason = f"Options: {len(options)}, Answer: {correct_answer}"
+                errors.append(f"Incomplete: {question_text[:50]}... ({reason})")
+        else:
+            i += 1
+
+    return {
+        "success": True,
+        "questions_created": questions_created,
+        "questions_skipped": questions_skipped,
+        "errors": errors[:10]  # Return first 10 errors
+    }

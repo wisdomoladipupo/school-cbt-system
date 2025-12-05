@@ -82,18 +82,15 @@ class StudentSubjectOut(BaseModel):
 
 class AssignStudentToClass(BaseModel):
     student_id: int
-    class_id: int
 
 
 class AssignTeacherToClass(BaseModel):
     teacher_id: int
-    class_id: int
 
 
 class AssignTeacherToSubject(BaseModel):
     teacher_id: int
     subject_id: int
-    class_id: int
 
 
 class TeacherSubjectOut(BaseModel):
@@ -103,3 +100,17 @@ class TeacherSubjectOut(BaseModel):
     teacher_id: int
     subject_id: int
     class_id: int
+
+
+class TeacherRequestCreate(BaseModel):
+    subject_id: int
+
+
+class TeacherRequestOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    teacher_id: int
+    subject_id: int
+    class_id: int
+    status: str

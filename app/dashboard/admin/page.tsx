@@ -34,7 +34,7 @@ export default function AdminDashboardPage() {
         const users = await usersAPI.list(token);
         setTotalTeachers(users.filter(u => u.role === "teacher").length);
 
-        const exams = await examsAPI.list();
+        const exams = await examsAPI.list(token);
         setActiveExams(exams.length);
       } catch (err) {
         console.error("Failed to fetch dashboard data:", err);

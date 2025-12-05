@@ -84,14 +84,16 @@ export default function LoginPage() {
 
         <form className="space-y-4" onSubmit={handleLogin}>
           <div>
-            <label className="block mb-1 font-semibold">Email</label>
+            <label className="block mb-1 font-semibold">Email or Registration Number</label>
             <input
-              type="email"
+              type="text"
+              placeholder="Email or NG/EEV/1234A"
               className="w-full p-2 border rounded-md focus:ring-2 focus:ring-indigo-500 focus:outline-none"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
             />
+            <p className="text-xs text-gray-500 mt-1">Students should login using their registration number (e.g. NG/EEV/1234A).</p>
           </div>
 
           <div className="relative">

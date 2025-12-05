@@ -11,6 +11,7 @@ export interface RegisterPayload {
   password: string;
   role?: "admin" | "teacher" | "student";
   student_class?: string;
+  passport?: string;
 }
 
 export interface User {
@@ -20,6 +21,7 @@ export interface User {
   role: "admin" | "teacher" | "student";
   student_class?: string;
   registration_number?: string;
+  passport?: string;
 }
 
 export interface ClassCreatePayload {
@@ -65,11 +67,13 @@ export interface QuestionCreate {
 
 export interface Question {
   id: number;
-  exam_id?: number;
   text: string;
   options: string[];
+  correct_answer: number; // <--- add this
   marks: number;
-  image_url?: string;
+  image_url?: string | null;
+  created_by?: number;
+  exam_id?: number;
 }
 
 export interface AnswerItem {
