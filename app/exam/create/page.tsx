@@ -16,7 +16,6 @@ export default function CreateExamBuilder() {
   const token = getStoredToken();
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [duration, setDuration] = useState(30);
   const [classes, setClasses] = useState<any[]>([]);
   const [selectedClass, setSelectedClass] = useState<number | null>(null);
@@ -118,10 +117,11 @@ export default function CreateExamBuilder() {
     if (!selectedClass) return alert("Please select a class");
     if (!selectedSubject) return alert("Please select a subject");
 
-    for (const q of questions) {
-      if (!q.question.trim()) return alert("A question is empty!");
+    // Validate only non-empty questions
+    const nonEmptyQuestions = questions.filter(q => q.question.trim());
+    for (const q of nonEmptyQuestions) {
       if (q.correctAnswer === null)
-        return alert("Some questions have no correct answer selected!");
+        return alert("All questions must have a correct answer selected!");
     }
     if (!token) return alert("Please login to save the exam");
 
@@ -130,7 +130,7 @@ export default function CreateExamBuilder() {
       // Create exam
       const examPayload = {
         title,
-        description,
+        description: "",
         duration_minutes: duration,
         published: false,
         class_id: selectedClass,
@@ -139,8 +139,8 @@ export default function CreateExamBuilder() {
       const createdExam = await examsAPI.create(examPayload as any, token);
       setCreatedExamId(createdExam.id);
 
-      // Create questions
-      for (const q of questions) {
+      // Create questions (only non-empty ones)
+      for (const q of nonEmptyQuestions) {
         await questionsAPI.create(
           {
             exam_id: createdExam.id,
@@ -166,7 +166,6 @@ export default function CreateExamBuilder() {
 
   const resetForm = () => {
     setTitle("");
-    setDescription("");
     setDuration(30);
     setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: null }]);
     setSelectedClass(null);
@@ -242,13 +241,6 @@ export default function CreateExamBuilder() {
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             className="w-full p-2 border rounded text-black"
-          />
-          <textarea
-            placeholder="Brief description (optional)"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            className="w-full p-2 border rounded text-black"
-            rows={2}
           />
           <div className="flex gap-3">
             <input

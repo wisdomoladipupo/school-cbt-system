@@ -266,6 +266,7 @@ export default function ManageUsersPage() {
           );
         } catch (err) {
           console.error("Failed to assign student to class:", err);
+          setErrorMsg(err instanceof Error ? err.message : "Failed to assign student to class");
         }
       }
 

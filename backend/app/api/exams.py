@@ -38,7 +38,8 @@ def list_exams_for_user(
     if current_user.role == "teacher":
         # Return only exams relevant to this teacher
         return exam_service.list_exams(db, published_only=False, teacher_id=current_user.id)
-    return exam_service.list_exams(db, published_only=True)
+    # For students, return only published exams for their class
+    return exam_service.list_exams(db, published_only=True, student_id=current_user.id)
 
 
 # -------------------- Specific routes (must come before /{exam_id} catch-all) --------------------

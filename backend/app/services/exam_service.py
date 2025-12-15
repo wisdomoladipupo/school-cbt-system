@@ -1,7 +1,10 @@
+
+
 from sqlalchemy.orm import Session
 from ..models.exam import Exam
 from ..models.question import Question
 from ..models.subject import TeacherSubject
+from ..models.user import User
 from ..schemas.exam import ExamCreate
 from typing import List, Optional
 from docx import Document
@@ -33,26 +36,42 @@ def get_exam(db: Session, exam_id: int):
     return db.query(Exam).filter(Exam.id == exam_id).first()
 
 # LIST EXAMS
-def list_exams(db: Session, published_only: bool = True, teacher_id: Optional[int] = None):
+def list_exams(db: Session, published_only: bool = True, teacher_id: Optional[int] = None, student_id: Optional[int] = None):
     """List exams, optionally filtered to published ones only.
 
-    If `teacher_id` is provided the results are restricted to exams that
-    belong to classes or subjects the teacher is assigned to.
+    If `teacher_id` is provided the results include:
+    1. Exams belonging to classes/subjects the teacher is assigned to, OR
+    2. Exams created by the teacher themselves
+    
+    If `student_id` is provided, results are restricted to exams for the
+    student's enrolled class(es).
     """
+    from ..models.subject import Class
+    
     query = db.query(Exam)
 
-    # If teacher_id provided, restrict to the teacher's assigned classes/subjects
-    if teacher_id is not None:
+    # Filter by student's classes
+    if student_id is not None:
+        # Get all classes the student is enrolled in
+        student_classes = db.query(Class).join(Class.students).filter(User.id == student_id).all()
+        class_ids = [c.id for c in student_classes]
+        
+        if not class_ids:
+            # Student not enrolled in any class, return empty
+            return []
+        
+        # Filter exams to those for the student's classes
+        query = query.filter(Exam.class_id.in_(class_ids))
+    
+    # Filter by teacher assignments and created exams
+    elif teacher_id is not None:
         ts = db.query(TeacherSubject).filter(TeacherSubject.teacher_id == teacher_id).all()
 
-        # If teacher has no assignments, return empty list early
-        if not ts:
-            return []
-
-        # Build OR of (class_id == X AND subject_id == Y) for each assignment
-        conds = []
+        # Build conditions: exams for assigned classes/subjects OR exams created by teacher
+        conds = [Exam.created_by == teacher_id]  # Always include exams created by teacher
+        
+        # Add assignments if they exist
         for t in ts:
-            # teacher_subject stores both class_id and subject_id (non-nullable)
             conds.append(and_(Exam.class_id == t.class_id, Exam.subject_id == t.subject_id))
 
         query = query.filter(or_(*conds))
@@ -65,12 +84,18 @@ def list_exams(db: Session, published_only: bool = True, teacher_id: Optional[in
 def teacher_can_access_exam(db: Session, teacher_id: int, exam: Exam) -> bool:
     """Return True if the teacher is allowed to manage/access the given exam.
 
-    A teacher can access the exam if they are assigned to the exam's class
-    or to the exam's subject for that class (via `teacher_subjects`).
+    A teacher can access the exam if:
+    1. They created the exam themselves, OR
+    2. They are assigned to the exam's class/subject (via `teacher_subjects`)
     """
     if not exam:
         return False
 
+    # Teachers can always manage exams they created
+    if exam.created_by == teacher_id:
+        return True
+
+    # Check if teacher is assigned to this exam's class/subject
     # Require an exact teacher_subject match for (class_id, subject_id)
     if exam.class_id is not None and exam.subject_id is not None:
         found = (
@@ -186,15 +211,15 @@ def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, cre
         question_text = line
         
         # Check for numbered question (1., 1), etc.)
-        num_match = re.match(r"^\s*\d+[\.\)]\s*(.+)$", line)
+        num_match = re.match(r"^\s*\d+[.)\]]\s*(.+)$", line)
         if num_match:
             question_text = num_match.group(1).strip()
             is_question = True
         # Check for bullet question (•, -, *, etc.)
-        elif re.match(r"^\s*[•\-\*]\s+(.+)$", line):
+        elif re.match(r"^\s*[•\-*]\s+(.+)$", line):
             is_question = True
         # Plain text question (if not an option or answer line)
-        elif not re.match(r"^\s*[A-Da-d][\.\)]\s", line) and not line.lower().startswith("answer"):
+        elif not re.match(r"^\s*[A-Da-d][.)\]]\s", line) and not line.lower().startswith("answer"):
             is_question = True
         
         if is_question:
@@ -204,13 +229,13 @@ def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, cre
             while i < len(paras):
                 next_line = paras[i]
                 # Stop if we hit options
-                if re.match(r"^\s*[A-Da-d][\.\)]\s", next_line):
+                if re.match(r"^\s*[A-Da-d][.)\]]\s", next_line):
                     break
                 # Stop if we hit answer
                 if next_line.lower().startswith("answer"):
                     break
                 # Stop if we hit new question
-                if re.match(r"^\s*\d+[\.\)]\s", next_line) or next_line.startswith("•"):
+                if re.match(r"^\s*\d+[.)\]]\s", next_line) or next_line.startswith("•"):
                     break
                 question_text += " " + next_line.strip()
                 i += 1
@@ -218,7 +243,7 @@ def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, cre
             # Collect options
             options = []
             while i < len(paras):
-                opt_match = re.match(r"^\s*([A-Da-d])[\.\)]\s*(.+)$", paras[i])
+                opt_match = re.match(r"^\s*([A-Da-d])[.)\]]\s*(.+)$", paras[i])
                 if opt_match:
                     options.append(opt_match.group(2).strip())
                     i += 1
@@ -229,7 +254,7 @@ def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, cre
             correct_answer = None
             if i < len(paras):
                 ans_line = paras[i].strip()
-                ans_match = re.search(r"[Aa]nswer\s*[:\-]?\s*([A-Da-d])", ans_line)
+                ans_match = re.search(r"[Aa]nswer\s*[:=]?\s*([A-Da-d])", ans_line)
                 if ans_match:
                     char = ans_match.group(1).upper()
                     correct_answer = ord(char) - 65  # A->0, B->1, etc.
@@ -264,3 +289,4 @@ def import_questions_from_docx(db: Session, exam_id: int, file_bytes: bytes, cre
         "questions_skipped": questions_skipped,
         "errors": errors[:10]  # Return first 10 errors
     }
+

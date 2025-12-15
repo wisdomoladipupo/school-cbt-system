@@ -3,10 +3,11 @@ DEBUG:passlib.utils.compat:loaded lazy attr 'SafeConfigParser': <class 'configpa
 DEBUG:passlib.utils.compat:loaded lazy attr 'NativeStringIO': <class '_io.StringIO'>
 DEBUG:passlib.utils.compat:loaded lazy attr 'BytesIO': <class '_io.BytesIO'>
 DEBUG:passlib.registry:registered 'argon2' handler: <class 'passlib.handlers.argon2.argon2'>
-INFO:     Started server process [16720]
+INFO:     Started server process [7668]
 INFO:     Waiting for application startup.
 INFO:root:Starting School CBT backend
 INFO:     Application startup complete.
-ERROR:    [Errno 10048] error while attempting to bind on address ('127.0.0.1', 8000): [winerror 10048] only one usage of each socket address (protocol/network address/port) is normally permitted
-INFO:     Waiting for application shutdown.
-INFO:     Application shutdown complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000 (Press CTRL+C to quit)
+INFO:app.api.auth:Login attempt for identifier=tosin@gmail.com
+DEBUG:passlib.handlers.argon2:detected 'argon2_cffi' backend, version '25.1.0', with support for 0x13 argon2 hashes
+INFO:app.api.auth:Successful login for identifier=tosin@gmail.com

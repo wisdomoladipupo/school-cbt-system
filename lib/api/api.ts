@@ -268,6 +268,20 @@ export const usersAPI = {
     }
     return response.json();
   },
+  getMyClasses: async (token: string): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/users/me/classes`, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to fetch my classes");
+    }
+    return response.json();
+  },
 };
 
 export const examsAPI = {
@@ -694,7 +708,32 @@ export const classesAPI = {
         body: JSON.stringify({ student_id: studentId }),
       }
     );
-    if (!response.ok) throw new Error("Failed to assign student to class");
+    if (!response.ok) {
+      // Try to surface server-provided error details when available
+      let body: any = null;
+      try {
+        body = await response.json();
+      } catch {
+        try {
+          body = await response.text();
+        } catch {
+          body = null;
+        }
+      }
+
+      const serverMsg =
+        body && typeof body === "object" ? body.detail || body.message : body;
+
+      // Map server message about existing assignment to a user-friendly, consistent message
+      if (serverMsg && typeof serverMsg === "string" && /already assigned/i.test(serverMsg)) {
+        throw new Error("students already assigned to a class");
+      }
+
+      throw new Error(
+        (serverMsg && typeof serverMsg === "string" ? serverMsg : "Failed to assign student to class")
+      );
+    }
+
     return response.json();
   },
 

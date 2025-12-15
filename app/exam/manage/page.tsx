@@ -57,41 +57,21 @@ export default function ManageExamsPage() {
       setLoading(true);
       const data = await examsAPI.list(token);
 
-      // If teacher, further filter to only exams matching their assignments
+      // If teacher, filter exams by classes the teacher is assigned to
       if (user.role === "teacher") {
         try {
-          const assignments = await (
-            await import("@/lib/api/api")
-          ).usersAPI.getMyAssignments(token);
-          // assignments: [{ class_id, class_name, subject_id, subject_name }]
-          if (Array.isArray(assignments) && assignments.length > 0) {
-            const allowed = new Set(
-              assignments.map((a: any) => `${a.class_id}::${a.subject_id}`)
-            );
-            const filtered = data.filter((exam: any) => {
-              // include exam if exact (class_id, subject_id) matches any assignment
-              const key = `${exam.class_id ?? ""}::${exam.subject_id ?? ""}`;
-              if (allowed.has(key)) return true;
-              // also include exams that are class-level (subject_id null) when teacher assigned to that class
-              if (
-                (exam.subject_id === null || exam.subject_id === undefined) &&
-                assignments.some((a: any) => a.class_id === exam.class_id)
-              ) {
-                return true;
-              }
-              return false;
-            });
+          const classes = await (await import("@/lib/api/api")).usersAPI.getMyClasses(token);
+          // classes: [{ class_id, class_name, level }]
+          if (Array.isArray(classes) && classes.length > 0) {
+            const allowedClassIds = new Set(classes.map((c: any) => c.class_id));
+            const filtered = data.filter((exam: any) => allowedClassIds.has(exam.class_id));
             setExams(filtered);
           } else {
-            // no assignments -> show none
-            setExams([]);
+            // No class assignments -> fall back to server-provided list
+            setExams(data);
           }
         } catch (e) {
-          // If fetching assignments failed, fall back to server-side filtered data
-          console.warn(
-            "Failed to fetch teacher assignments, falling back to server response",
-            e
-          );
+          console.warn("Failed to fetch teacher classes, falling back to server response", e);
           setExams(data);
         }
       } else {
