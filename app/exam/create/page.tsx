@@ -91,41 +91,6 @@ export default function CreateExamBuilder() {
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
-  const saveQuestion = async (index: number) => {
-    const q = questions[index];
-    if (!q.question.trim()) {
-      alert("Question text cannot be empty");
-      return;
-    }
-    if (q.correctAnswer === null) {
-      alert("Please select a correct answer");
-      return;
-    }
-    if (!token) {
-      alert("Please login first");
-      return;
-    }
-
-    try {
-      if (q.id) {
-        // Update existing question
-        await questionsAPI.update(q.id, {
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer,
-          marks: 1,
-          image_url: q.imageUrl,
-        }, token);
-        alert("Question updated successfully");
-      } else {
-        // This shouldn't happen in normal flow but just in case
-        alert("Question not yet saved to server. Use Save Exam to create it.");
-      }
-    } catch (err) {
-      alert(`Failed to save question: ${err instanceof Error ? err.message : "Unknown error"}`);
-    }
-  };
-
   const updateQuestionText = (index: number, value: string) => {
     const updated = [...questions];
     updated[index].question = value;
