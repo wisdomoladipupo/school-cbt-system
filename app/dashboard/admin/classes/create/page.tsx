@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  getStoredToken,
-} from "@/lib/api/token";
+import { getStoredToken } from "@/lib/api/token";
 import { classesAPI } from "@/lib/api/api";
 import type { SchoolLevel, Subject } from "@/lib/api";
+import Card from "@/components/ui/Card";
+import Input from "@/components/ui/Input";
+import Button from "@/components/ui/Button";
 export default function CreateClassPage() {
   const router = useRouter();
   const token = getStoredToken();
@@ -159,11 +160,10 @@ export default function CreateClassPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-500 to-purple-600 p-4">
-      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
-        <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
-          Create / Update Class
-        </h1>
+    <div className="min-h-screen bg-[var(--background)] p-6">
+      <div className="w-full max-w-2xl mx-auto">
+        <Card className="p-8">
+          <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">Create / Update Class</h1>
 
         {message && (
           <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg border border-green-300">
@@ -184,7 +184,7 @@ export default function CreateClassPage() {
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none transition"
+              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-[var(--color-primary)] focus:outline-none transition"
             >
               <option value="">-- Select a level --</option>
               {schoolLevels.map((level) => (
@@ -203,70 +203,36 @@ export default function CreateClassPage() {
           </div>
 
           {/* Subjects Management */}
-          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-            <p className="text-sm font-semibold text-blue-900 mb-2">
-              Subjects for this class:
-            </p>
+          <Card className="bg-[var(--surface)]">
+            <p className="text-sm font-semibold text-gray-800 mb-2">Subjects for this class:</p>
             <div className="flex flex-wrap gap-2 mb-2">
               {subjects.map((subject, idx) => (
-                <span
-                  key={idx}
-                  className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1"
-                >
+                <span key={idx} className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded flex items-center gap-1">
                   {subject}
-                  <button
-                    type="button"
-                    onClick={() => removeSubject(subject)}
-                    className="text-red-600 font-bold"
-                  >
-                    ×
-                  </button>
+                  <Button variant="ghost" onClick={() => removeSubject(subject)} className="text-red-600 px-2">×</Button>
                 </span>
               ))}
             </div>
             <div className="flex gap-2">
-              <input
-                type="text"
-                value={newSubject}
-                onChange={(e) => setNewSubject(e.target.value)}
-                placeholder="Add custom subject"
-                className="flex-1 p-2 border rounded"
-              />
-              <button
-                type="button"
-                onClick={addCustomSubject}
-                className="bg-green-600 text-white px-3 rounded"
-              >
-                Add
-              </button>
+              <Input type="text" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="Add custom subject" />
+              <Button type="button" onClick={addCustomSubject} variant="primary">Add</Button>
             </div>
-          </div>
+          </Card>
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full mt-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
-          >
+          <Button type="submit" variant="primary" className="w-full mt-6 py-3" disabled={loading}>
             {loading ? "Saving..." : "Save Class"}
-          </button>
+          </Button>
 
           <div className="flex gap-3">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard/admin")}
-              className="flex-1 py-2 text-gray-600 font-semibold rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition"
-            >
+            <Button type="button" variant="secondary" onClick={() => router.push("/dashboard/admin")} className="flex-1 py-2">
               Go to Dashboard
-            </button>
-            <button
-              type="button"
-              onClick={() => router.back()}
-              className="flex-1 py-2 text-gray-600 font-semibold rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition"
-            >
+            </Button>
+            <Button type="button" variant="secondary" onClick={() => router.back()} className="flex-1 py-2">
               Back
-            </button>
+            </Button>
           </div>
         </form>
+        </Card>
       </div>
     </div>
   );

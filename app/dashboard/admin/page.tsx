@@ -5,6 +5,8 @@ import Modal from "@/components/ui/Modal";
 import StudentForm from "@/components/students/studentForm";
 import AdminClassManagementEnhanced from "@/components/admin/ClassManagementEnhanced";
 import { usersAPI, examsAPI } from "@/lib/api/api";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
 
 export default function AdminDashboardPage() {
   const router = useRouter();
@@ -86,68 +88,42 @@ export default function AdminDashboardPage() {
       {activeTab === "overview" && (
         <>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">
-                Total Students
-              </h3>
-              <p className="text-3xl font-bold mt-2 text-gray-900">
-                {totalStudents ?? "--"}
-              </p>
-            </div>
+            <Card>
+              <h3 className="text-lg font-semibold text-gray-700">Total Students</h3>
+              <p className="text-3xl font-bold mt-2 text-gray-900">{totalStudents ?? "--"}</p>
+            </Card>
 
-            <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">
-                Total Teachers
-              </h3>
-              <p className="text-3xl font-bold mt-2 text-gray-900">
-                {totalTeachers ?? "--"}
-              </p>
-            </div>
+            <Card>
+              <h3 className="text-lg font-semibold text-gray-700">Total Teachers</h3>
+              <p className="text-3xl font-bold mt-2 text-gray-900">{totalTeachers ?? "--"}</p>
+            </Card>
 
-            <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-              <h3 className="text-lg font-semibold text-gray-700">
-                Active Exams
-              </h3>
-              <p className="text-3xl font-bold mt-2 text-gray-900">
-                {activeExams ?? "--"}
-              </p>
-            </div>
+            <Card>
+              <h3 className="text-lg font-semibold text-gray-700">Active Exams</h3>
+              <p className="text-3xl font-bold mt-2 text-gray-900">{activeExams ?? "--"}</p>
+            </Card>
           </div>
 
-          <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">
-              Quick Actions
-            </h3>
+          <Card>
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">Quick Actions</h3>
             <div className="flex gap-4 flex-wrap">
-              <button
-                className="px-5 py-3 bg-purple-50 text-purple-700 font-medium rounded-xl shadow hover:bg-purple-100 transition"
-                onClick={() => router.push("/dashboard/admin/classes/create")}
-              >
+              <Button onClick={() => router.push("/dashboard/admin/classes/create")} className="px-5 py-3" variant="secondary">
                 Create New Class
-              </button>
+              </Button>
 
-              <button
-                className="px-5 py-3 bg-blue-50 text-blue-700 font-medium rounded-xl shadow hover:bg-blue-100 transition"
-                onClick={() => router.push("/exam/create")}
-              >
+              <Button onClick={() => router.push("/exam/create")} className="px-5 py-3" variant="secondary">
                 Create New Exam
-              </button>
+              </Button>
 
-              <button
-                className="px-5 py-3 bg-green-50 text-green-700 font-medium rounded-xl shadow hover:bg-green-100 transition"
-                onClick={() => setIsModalOpen(true)}
-              >
+              <Button onClick={() => setIsModalOpen(true)} className="px-5 py-3" variant="ghost">
                 Register Student
-              </button>
+              </Button>
 
-              <button
-                onClick={() => router.push("/dashboard/admin/users")}
-                className="px-5 py-3 bg-indigo-600 text-white font-medium rounded-xl shadow hover:bg-indigo-700 transition"
-              >
+              <Button onClick={() => router.push("/dashboard/admin/users")} className="px-5 py-3" variant="primary">
                 Manage Users
-              </button>
+              </Button>
             </div>
-          </div>
+          </Card>
         </>
       )}
 
