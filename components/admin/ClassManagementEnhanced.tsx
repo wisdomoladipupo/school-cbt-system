@@ -785,6 +785,6 @@ export default function AdminClassManagement() {
           </div>
         </div>
       )}
-    </div>
+    </Card>
   );
 }
