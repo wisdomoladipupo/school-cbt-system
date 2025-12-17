@@ -543,13 +543,16 @@ export default function AdminClassManagement() {
                     >
                       <option value="">-- Choose a subject --</option>
                       {allSubjects.map((subj: Subject) => {
-                        const assigned = !!classDetails?.subjects?.some(
+                        const inClass = !!classDetails?.subjects?.some(
                           (s) => s.id === subj.id
+                        );
+                        const hasTeachers = !!subjectsWithTeachers.find(
+                          (sw) => sw.subject_id === subj.id && sw.teachers.length > 0
                         );
                         return (
                           <option key={subj.id} value={subj.id}>
                             {subj.name} ({subj.code})
-                            {assigned ? " — assigned" : ""}
+                            {inClass && hasTeachers ? " — has teachers assigned" : ""}
                           </option>
                         );
                       })}
