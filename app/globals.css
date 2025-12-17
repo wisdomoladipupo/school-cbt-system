@@ -20,13 +20,8 @@
   --space-4: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0b1220;
-    --surface: #071025;
-    --foreground: #e6eef8;
-  }
-}
+/* Remove dark-mode overrides to keep light background across the redesign */
+/* Dark mode tokens intentionally omitted so the site maintains a light backdrop */
 
 /* Tailwind-friendly utility tokens (optional) */
 .theme-primary {
