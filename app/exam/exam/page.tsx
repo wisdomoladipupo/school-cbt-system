@@ -99,15 +99,38 @@ export default function ExamPage() {
     try {
       setIsSavingEdit(true);
       setError(null); // Clear error before attempting save
-      const updatedQuestion = await questionsAPI.update(editingQuestionId, {
+      const response = await questionsAPI.update(editingQuestionId, {
         text: editFormData.text,
         options: editFormData.options,
         correct_answer: editFormData.correct_answer,
         marks: editFormData.marks,
         image_url: editFormData.image_url,
       }, token);
-      // Update local state with response data to ensure consistency
-      setQuestions(questions.map((q) => (q.id === editingQuestionId ? updatedQuestion : q)));
+      
+      console.log("Updated question response:", response);
+      
+      // Ensure the response is a proper Question object
+      const updatedQuestion: Question = {
+        id: response.id,
+        text: response.text,
+        options: response.options,
+        correct_answer: response.correct_answer,
+        marks: response.marks,
+        image_url: response.image_url || null,
+      };
+      
+      // Update local state with properly typed response data
+      const newQuestions = questions.map((q) => {
+        if (q.id === editingQuestionId) {
+          return updatedQuestion;
+        }
+        return q;
+      });
+      
+      console.log("New questions array:", newQuestions);
+      setQuestions(newQuestions);
+      
+      // Close modal after state is set
       setEditingQuestionId(null);
       setEditFormData(null);
     } catch (err: any) {
