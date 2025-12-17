@@ -113,6 +113,30 @@ export default function CreateClassPage() {
 
     setLoading(true);
     try {
+      // Ensure all custom subject names exist in global subjects list
+      const currentSubjects = [...allSubjects];
+      const missing = subjects.filter(
+        (name) => !currentSubjects.some((s) => s.name === name)
+      );
+      if (missing.length > 0) {
+        for (const name of missing) {
+          // create a simple code from the name
+          const code = name
+            .split(" ")
+            .map((w) => w[0])
+            .join("")
+            .slice(0, 6)
+            .toUpperCase();
+          try {
+            const created = await classesAPI.createSubject({ name, code }, token || undefined);
+            currentSubjects.push(created);
+          } catch (err) {
+            console.warn("Failed to create subject:", name, err);
+          }
+        }
+        // refresh allSubjects state
+        setAllSubjects(currentSubjects);
+      }
       // First, check if class already exists
       const classes = await classesAPI.getClassesByLevel(selectedLevel);
       const existingClass = classes.find(c => c.name === derivedClassName);
@@ -121,11 +145,8 @@ export default function CreateClassPage() {
 
       if (existingClass) {
         // Update existing class
-        await classesAPI.updateClassSubjects(
-          existingClass.id,
-          allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id),
-          token
-        );
+        const subjectIds = currentSubjects.filter((s) => subjects.includes(s.name)).map((s) => s.id);
+        await classesAPI.updateClassSubjects(existingClass.id, subjectIds, token);
         classId = existingClass.id;
       } else {
         // Create new class
@@ -136,7 +157,7 @@ export default function CreateClassPage() {
         classId = newClass.id;
 
         // Update subjects for the new class
-        const subjectIds = allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id);
+        const subjectIds = currentSubjects.filter((s) => subjects.includes(s.name)).map((s) => s.id);
         if (subjectIds.length > 0) {
           await classesAPI.updateClassSubjects(classId, subjectIds, token);
         }

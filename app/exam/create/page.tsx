@@ -197,7 +197,7 @@ export default function CreateExamBuilder() {
 
         const examPayload = {
           title,
-          description,
+          description: "",
           duration_minutes: duration,
           published: false,
           class_id: selectedClass,
