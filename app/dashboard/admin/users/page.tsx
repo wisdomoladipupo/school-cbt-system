@@ -417,7 +417,7 @@ export default function ManageUsersPage() {
 
       {/* Add User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded w-96">
             <h2 className="text-xl font-bold mb-4">Add User</h2>
 
@@ -519,7 +519,7 @@ export default function ManageUsersPage() {
 
       {/* Edit User Modal */}
       {showEditModal && editingUserId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded w-96">
             <h2 className="text-xl font-bold mb-4">Edit User</h2>
 
@@ -603,7 +603,7 @@ export default function ManageUsersPage() {
 
       {/* Details Modal (View + Edit + Delete) */}
       {showDetailsModal && selectedUser && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
           <div className="bg-white p-6 rounded w-96 max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between">
               <h2 className="text-xl font-bold mb-2">User Details</h2>

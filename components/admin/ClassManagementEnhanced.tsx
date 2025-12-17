@@ -732,7 +732,7 @@ export default function AdminClassManagement() {
         </>
       )}
       {isSubjectsModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
           <div className="bg-white p-6 rounded w-full max-w-2xl">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold">
