@@ -4,6 +4,9 @@ import { useState, useEffect, useRef } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import { getStoredToken } from "@/lib/api";
 import { questionsAPI, classesAPI, examsAPI } from "@/lib/api/api";
+import Card from "@/components/ui/Card";
+import Button from "@/components/ui/Button";
+import Input from "@/components/ui/Input";
 
 interface Question {
   question: string;
@@ -233,21 +236,20 @@ export default function CreateExamBuilder() {
       <h1 className="text-3xl font-bold text-gray-900">Exam Builder</h1>
 
       {/* Exam Metadata */}
-      <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
+      <Card>
         <div className="grid grid-cols-1 gap-3">
-          <input
+          <Input
             type="text"
             placeholder="Exam Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="w-full p-2 border rounded text-black"
           />
-          <div className="flex gap-3">
-            <input
+          <div className="flex gap-3 items-center">
+            <Input
               type="number"
               value={duration}
               onChange={(e) => setDuration(parseInt(e.target.value || "30"))}
-              className="w-32 p-2 border rounded text-black"
+              className="w-32"
             />
             <select
               value={selectedClass ?? ""}
@@ -280,14 +282,10 @@ export default function CreateExamBuilder() {
             </select>
           </div>
         </div>
-      </div>
+      </Card>
 
       {/* Import Document */}
-      <label
-        className="cursor-pointer bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
-        onClick={handleImportClick}
-      >
-        {importingFile ? "Importing..." : "Import Exam Document"}
+      <div>
         <input
           type="file"
           ref={fileInputRef}
@@ -295,25 +293,26 @@ export default function CreateExamBuilder() {
           className="hidden"
           onChange={(e) => e.target.files?.[0] && handleImportDocument(e.target.files[0])}
         />
-      </label>
+        <Button variant="secondary" onClick={handleImportClick} className="inline-flex">
+          {importingFile ? "Importing..." : "Import Exam Document"}
+        </Button>
+      </div>
 
       {/* Questions */}
       {questions.map((q, index) => (
-        <div
-          key={index}
-          className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200"
-        >
+        <Card key={index} className="rounded-xl space-y-6">
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">
               Question {index + 1}
             </h2>
             {questions.length > 1 && (
-              <button
+              <Button
+                variant="ghost"
                 onClick={() => removeQuestion(index)}
                 className="text-red-600 hover:text-red-800 font-medium"
               >
                 Remove
-              </button>
+              </Button>
             )}
           </div>
 
@@ -345,33 +344,26 @@ export default function CreateExamBuilder() {
                   onChange={() => setCorrect(index, optIndex)}
                   className="accent-indigo-600 w-4 h-4"
                 />
-                <input
+                <Input
                   type="text"
                   value={opt}
                   onChange={(e) => updateOption(index, optIndex, e.target.value)}
                   placeholder={`Option ${optIndex + 1}`}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ))}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-4">
-        <button
-          onClick={addQuestion}
-          className="px-5 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition"
-        >
+        <Button variant="ghost" onClick={addQuestion} className="px-5 py-2">
           + Add Another Question
-        </button>
-        <button
-          onClick={submitExam}
-          className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
-        >
-          Save Exam
-        </button>
+        </Button>
+        <Button variant="primary" onClick={submitExam} className="px-6 py-3">
+          {saving ? "Saving..." : "Save Exam"}
+        </Button>
       </div>
     </div>
   );

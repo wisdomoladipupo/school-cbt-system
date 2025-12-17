@@ -12,6 +12,7 @@ import type {
   ClassWithSubjects,
 } from "@/lib/api";
 import { useRouter } from "next/navigation";
+import Card from "@/components/ui/Card";
 
 // Define result types for API calls
 interface AssignStudentResult {
@@ -327,14 +328,14 @@ export default function AdminClassManagement() {
   // RENDER
   // ----------------------
   return (
-    <div className="p-6 bg-white rounded-lg shadow-md">
+    <Card className="p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold text-gray-800">
           Manage Classes, Teachers & Students
         </h2>
         <button
           onClick={() => router.push("/dashboard/admin/classes/create")}
-          className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition"
+          className="px-4 py-2 bg-[var(--color-primary)] text-white rounded-lg hover:brightness-90 transition"
         >
           + Create New Class
         </button>
