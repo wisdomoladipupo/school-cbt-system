@@ -11,19 +11,7 @@ from fastapi.responses import FileResponse
 
 router = APIRouter(prefix="/questions", tags=["questions"])
 
-@router.post("/", response_model=QuestionOut)
-def add_question(payload: QuestionCreate, db: Session = Depends(get_db), current_user = Depends(require_role("teacher"))):
-    # verify exam exists (if provided)
-    if payload.exam_id:
-        exam = exam_service.get_exam(db, payload.exam_id)
-        if not exam:
-            raise HTTPException(status_code=404, detail="Exam not found")
-    q = exam_service.add_question(db, current_user.id, payload.exam_id, payload.text, payload.options, payload.correct_answer, payload.marks, payload.image_url)
-    return q
-
-@router.get("/exam/{exam_id}", response_model=List[QuestionOut])
-def get_questions_for_exam(exam_id: int, db: Session = Depends(get_db)):
-    return exam_service.get_questions_for_exam(db, exam_id)
+# -------- Specific routes (must come before generic {id} routes) --------
 
 @router.post("/upload-image")
 async def upload_question_image(file: UploadFile = File(...), current_user = Depends(require_role("teacher"))):
@@ -48,6 +36,21 @@ async def upload_question_image(file: UploadFile = File(...), current_user = Dep
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
 
+@router.get("/exam/{exam_id}", response_model=List[QuestionOut])
+def get_questions_for_exam(exam_id: int, db: Session = Depends(get_db)):
+    return exam_service.get_questions_for_exam(db, exam_id)
+
+# -------- Generic routes (must come after specific routes) --------
+
+@router.post("/", response_model=QuestionOut)
+def add_question(payload: QuestionCreate, db: Session = Depends(get_db), current_user = Depends(require_role("teacher"))):
+    # verify exam exists (if provided)
+    if payload.exam_id:
+        exam = exam_service.get_exam(db, payload.exam_id)
+        if not exam:
+            raise HTTPException(status_code=404, detail="Exam not found")
+    q = exam_service.add_question(db, current_user.id, payload.exam_id, payload.text, payload.options, payload.correct_answer, payload.marks, payload.image_url)
+    return q
 
 @router.put("/{question_id}", response_model=QuestionOut)
 def update_question(question_id: int, payload: QuestionUpdate, db: Session = Depends(get_db), current_user = Depends(require_role(["teacher", "admin"]))):
