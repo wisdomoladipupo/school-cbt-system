@@ -91,6 +91,7 @@ export default function ExamPage() {
   const openEditModal = (question: Question) => {
     setEditingQuestionId(question.id);
     setEditFormData({ ...question });
+    setError(null); // Clear any error when opening modal
   };
 
   const saveQuestionChanges = async () => {
@@ -108,6 +109,7 @@ export default function ExamPage() {
       setQuestions(questions.map((q) => (q.id === editingQuestionId ? editFormData : q)));
       setEditingQuestionId(null);
       setEditFormData(null);
+      setError(null); // Clear any previous errors on successful save
     } catch (err: any) {
       setError(err.message || "Failed to save question changes");
     } finally {
