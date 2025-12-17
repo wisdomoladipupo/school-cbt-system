@@ -15,6 +15,15 @@ class QuestionOut(BaseModel):
     id: int
     exam_id: Optional[int]
     text: str
+    correct_answer: int
     options: List[str]
     marks: int
+    image_url: Optional[str] = None
+
+
+class QuestionUpdate(BaseModel):
+    text: Optional[str] = None
+    options: Optional[List[str]] = None
+    correct_answer: Optional[int] = None
+    marks: Optional[int] = None
     image_url: Optional[str] = None

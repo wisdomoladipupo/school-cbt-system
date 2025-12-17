@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
 from sqlalchemy.orm import Session
 from ..core.db import get_db
-from ..schemas.question import QuestionCreate, QuestionOut
+from ..schemas.question import QuestionCreate, QuestionOut, QuestionUpdate
 from ..api.deps import require_role, get_current_user
 from ..services import exam_service
 from typing import List
@@ -47,3 +47,40 @@ async def upload_question_image(file: UploadFile = File(...), current_user = Dep
         return {"image_url": f"/uploads/questions/{unique_filename}"}
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"File upload failed: {str(e)}")
+
+
+@router.put("/{question_id}", response_model=QuestionOut)
+def update_question(question_id: int, payload: QuestionUpdate, db: Session = Depends(get_db), current_user = Depends(require_role(["teacher", "admin"]))):
+    # Ensure question exists
+    q = exam_service.get_question(db, question_id)
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    # If teacher, ensure they can access the exam this question belongs to
+    if getattr(current_user, "role", None) == "teacher":
+        exam = exam_service.get_exam(db, q.exam_id)
+        if not exam or not exam_service.teacher_can_access_exam(db, current_user.id, exam):
+            raise HTTPException(status_code=403, detail="Not allowed to modify this question")
+
+    try:
+        updated = exam_service.update_question(db, question_id, current_user.id, text=payload.text, options=payload.options, correct_answer=payload.correct_answer, marks=payload.marks, image_url=payload.image_url)
+        return updated
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+
+@router.delete("/{question_id}")
+def delete_question(question_id: int, db: Session = Depends(get_db), current_user = Depends(require_role(["teacher", "admin"]))):
+    q = exam_service.get_question(db, question_id)
+    if not q:
+        raise HTTPException(status_code=404, detail="Question not found")
+
+    if getattr(current_user, "role", None) == "teacher":
+        exam = exam_service.get_exam(db, q.exam_id)
+        if not exam or not exam_service.teacher_can_access_exam(db, current_user.id, exam):
+            raise HTTPException(status_code=403, detail="Not allowed to delete this question")
+
+    success = exam_service.delete_question(db, question_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete question")
+    return {"detail": "Question deleted"}

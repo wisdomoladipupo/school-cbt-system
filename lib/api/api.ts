@@ -464,6 +464,34 @@ export const questionsAPI = {
 
     return response.json();
   },
+
+  update: async (questionId: number, payload: Partial<any>, token: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to update question (status ${res.status})`);
+    }
+    return res.json();
+  },
+
+  delete: async (questionId: number, token: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to delete question (status ${res.status})`);
+    }
+    return res.json();
+  },
 };
 
 // ============================================

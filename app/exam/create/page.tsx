@@ -9,6 +9,7 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 
 interface Question {
+  id?: number;
   question: string;
   options: string[];
   correctAnswer: number | null;
@@ -70,9 +71,59 @@ export default function CreateExamBuilder() {
   const addQuestion = () =>
     setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: null }]);
 
-  const removeQuestion = (index: number) => {
+  const removeQuestion = async (index: number) => {
     if (questions.length === 1) return;
+    const q = questions[index];
+    
+    // If question has an id, it exists in DB and needs to be deleted
+    if (q.id && token) {
+      if (!window.confirm("Delete this question permanently? This cannot be undone.")) {
+        return;
+      }
+      try {
+        await questionsAPI.delete(q.id, token);
+      } catch (err) {
+        alert(`Failed to delete question: ${err instanceof Error ? err.message : "Unknown error"}`);
+        return;
+      }
+    }
+    
     setQuestions(questions.filter((_, i) => i !== index));
+  };
+
+  const saveQuestion = async (index: number) => {
+    const q = questions[index];
+    if (!q.question.trim()) {
+      alert("Question text cannot be empty");
+      return;
+    }
+    if (q.correctAnswer === null) {
+      alert("Please select a correct answer");
+      return;
+    }
+    if (!token) {
+      alert("Please login first");
+      return;
+    }
+
+    try {
+      if (q.id) {
+        // Update existing question
+        await questionsAPI.update(q.id, {
+          text: q.question,
+          options: q.options,
+          correct_answer: q.correctAnswer,
+          marks: 1,
+          image_url: q.imageUrl,
+        }, token);
+        alert("Question updated successfully");
+      } else {
+        // This shouldn't happen in normal flow but just in case
+        alert("Question not yet saved to server. Use Save Exam to create it.");
+      }
+    } catch (err) {
+      alert(`Failed to save question: ${err instanceof Error ? err.message : "Unknown error"}`);
+    }
   };
 
   const updateQuestionText = (index: number, value: string) => {
@@ -114,6 +165,68 @@ export default function CreateExamBuilder() {
     setQuestions(updated);
   };
 
+  // Save a single question (create or update depending on presence of id)
+  const saveQuestion = async (index: number) => {
+    if (!token) return alert("Please login first");
+    const q = questions[index];
+    if (!createdExamId) return alert("Please save or create the exam first so questions can be persisted.");
+
+    try {
+      if (q.id) {
+        // update
+        const updated = await questionsAPI.update(q.id, {
+          text: q.question,
+          options: q.options,
+          correct_answer: q.correctAnswer,
+          marks: 1,
+          image_url: q.imageUrl,
+        }, token);
+        // update local
+        setQuestions((prev) => {
+          const out = [...prev];
+          out[index] = { ...out[index], question: updated.text, options: updated.options, correctAnswer: updated.correct_answer, imageUrl: updated.image_url };
+          return out;
+        });
+        alert("Question updated");
+      } else {
+        // create
+        const created = await questionsAPI.create({
+          exam_id: createdExamId,
+          text: q.question,
+          options: q.options,
+          correct_answer: q.correctAnswer as number,
+          marks: 1,
+          image_url: q.imageUrl,
+        } as any, token);
+        setQuestions((prev) => {
+          const out = [...prev];
+          out[index].id = created.id;
+          return out;
+        });
+        alert("Question saved to server");
+      }
+    } catch (err) {
+      console.error("Failed to save question:", err);
+      alert(err instanceof Error ? err.message : "Failed to save question");
+    }
+  };
+
+  const deleteQuestion = async (index: number) => {
+    if (!token) return alert("Please login first");
+    const q = questions[index];
+    try {
+      if (q.id) {
+        await questionsAPI.delete(q.id, token);
+      }
+      // remove locally
+      setQuestions((prev) => prev.filter((_, i) => i !== index));
+      alert("Question deleted");
+    } catch (err) {
+      console.error("Failed to delete question:", err);
+      alert(err instanceof Error ? err.message : "Failed to delete question");
+    }
+  };
+
   // -------------------- Exam Submission --------------------
   const submitExam = async () => {
     if (!title.trim()) return alert("Please provide an exam title");
@@ -142,9 +255,10 @@ export default function CreateExamBuilder() {
       const createdExam = await examsAPI.create(examPayload as any, token);
       setCreatedExamId(createdExam.id);
 
-      // Create questions (only non-empty ones)
-      for (const q of nonEmptyQuestions) {
-        await questionsAPI.create(
+      // Create questions (only non-empty ones). Capture created IDs so UI can edit/delete later.
+      for (let i = 0; i < nonEmptyQuestions.length; i++) {
+        const q = nonEmptyQuestions[i];
+        const createdQ: any = await questionsAPI.create(
           {
             exam_id: createdExam.id,
             text: q.question,
@@ -155,6 +269,14 @@ export default function CreateExamBuilder() {
           } as any,
           token
         );
+        // Update local questions state to include created id
+        setQuestions((prev) => {
+          const updated = [...prev];
+          // find matching question by text and options (best-effort) and set id
+          const idx = updated.findIndex((qq) => qq.question === q.question && JSON.stringify(qq.options) === JSON.stringify(q.options));
+          if (idx >= 0) updated[idx].id = createdQ.id;
+          return updated;
+        });
       }
 
       alert("Exam and questions saved successfully");
@@ -216,6 +338,7 @@ export default function CreateExamBuilder() {
       // Refresh questions in builder
       const updatedQuestions = await questionsAPI.getForExam(examId, token);
       const mapped = updatedQuestions.map((q: any) => ({
+        id: q.id,
         question: q.text,
         options: q.options,
         correctAnswer: q.correct_answer,
@@ -305,15 +428,26 @@ export default function CreateExamBuilder() {
             <h2 className="text-xl font-semibold text-gray-800">
               Question {index + 1}
             </h2>
-            {questions.length > 1 && (
-              <Button
-                variant="ghost"
-                onClick={() => removeQuestion(index)}
-                className="text-red-600 hover:text-red-800 font-medium"
-              >
-                Remove
-              </Button>
-            )}
+            <div className="flex gap-2">
+              {q.id && (
+                <Button
+                  variant="ghost"
+                  onClick={() => saveQuestion(index)}
+                  className="text-blue-600 hover:text-blue-800 font-medium text-sm"
+                >
+                  Save
+                </Button>
+              )}
+              {questions.length > 1 && (
+                <Button
+                  variant="ghost"
+                  onClick={() => removeQuestion(index)}
+                  className="text-red-600 hover:text-red-800 font-medium text-sm"
+                >
+                  {q.id ? "Delete" : "Remove"}
+                </Button>
+              )}
+            </div>
           </div>
 
           {/* Question Editor */}
