@@ -383,6 +383,25 @@ export const examsAPI = {
     return res.json();
   },
 
+  update: async (examId: number, payload: Partial<any>, token: string): Promise<Exam> => {
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Failed to update exam (status ${res.status})`
+      );
+    }
+    return res.json();
+  },
+
   togglePublish: async (
     examId: number,
     publish: boolean,

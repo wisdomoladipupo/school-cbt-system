@@ -127,6 +127,26 @@ def delete_exam(db: Session, exam_id: int) -> bool:
     db.commit()
     return True
 
+# UPDATE EXAM
+def update_exam(db: Session, exam_id: int, title: Optional[str] = None, description: Optional[str] = None, duration_minutes: Optional[int] = None, class_id: Optional[int] = None, subject_id: Optional[int] = None):
+    """Update exam fields"""
+    exam = db.query(Exam).filter(Exam.id == exam_id).first()
+    if not exam:
+        return None
+    if title is not None:
+        exam.title = title
+    if description is not None:
+        exam.description = description
+    if duration_minutes is not None:
+        exam.duration_minutes = duration_minutes
+    if class_id is not None:
+        exam.class_id = class_id
+    if subject_id is not None:
+        exam.subject_id = subject_id
+    db.commit()
+    db.refresh(exam)
+    return exam
+
 # UPDATE EXAM PUBLISHED STATUS
 def update_exam_published(db: Session, exam_id: int, published: bool):
     """Update the published status of an exam"""

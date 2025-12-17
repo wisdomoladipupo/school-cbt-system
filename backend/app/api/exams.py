@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Body
 from sqlalchemy.orm import Session
 from typing import List
 from ..core.db import get_db
-from ..schemas.exam import ExamCreate, ExamOut
+from ..schemas.exam import ExamCreate, ExamOut, ExamUpdate
 from ..services import exam_service
 from ..api.deps import require_role, get_current_user
 from io import BytesIO
@@ -105,6 +105,26 @@ def get_exam_questions(
 
 
 # -------------------- Generic exam routes (catch-all, must come last) --------------------
+
+@router.put("/{exam_id}", response_model=ExamOut)
+def update_exam(
+    exam_id: int,
+    payload: ExamUpdate,
+    db: Session = Depends(get_db),
+    current_user = Depends(require_role(["teacher", "admin"]))
+):
+    exam = exam_service.get_exam(db, exam_id)
+    if not exam:
+        raise HTTPException(status_code=404, detail="Exam not found")
+
+    # If teacher, ensure they are allowed to update this exam
+    if getattr(current_user, "role", None) == "teacher":
+        if not exam_service.teacher_can_access_exam(db, current_user.id, exam):
+            raise HTTPException(status_code=403, detail="Not allowed to update this exam")
+
+    updated = exam_service.update_exam(db, exam_id, title=payload.title, description=payload.description, duration_minutes=payload.duration_minutes, class_id=payload.class_id, subject_id=payload.subject_id)
+    return updated
+
 
 @router.get("/{exam_id}", response_model=ExamOut)
 def get_exam(exam_id: int, db: Session = Depends(get_db)):

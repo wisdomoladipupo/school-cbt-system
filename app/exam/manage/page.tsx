@@ -13,6 +13,20 @@ interface Exam {
   published?: boolean;
   description?: string;
   duration_minutes?: number;
+  class_id?: number;
+  subject_id?: number;
+}
+
+interface Subject {
+  id: number;
+  name: string;
+  code: string;
+}
+
+interface Class {
+  id: number;
+  name: string;
+  level: string;
 }
 
 export default function ManageExamsPage() {
@@ -21,6 +35,24 @@ export default function ManageExamsPage() {
   const [error, setError] = useState<string | null>(null);
   const [backendHealth, setBackendHealth] = useState<string | null>(null);
   const [publishing, setPublishing] = useState<Record<number, boolean>>({});
+  const [editingExamId, setEditingExamId] = useState<number | null>(null);
+  const [editFormData, setEditFormData] = useState<{
+    title: string;
+    description: string;
+    duration_minutes: number;
+    class_id: number | null;
+    subject_id: number | null;
+  }>({
+    title: "",
+    description: "",
+    duration_minutes: 30,
+    class_id: null,
+    subject_id: null,
+  });
+  const [classes, setClasses] = useState<Class[]>([]);
+  const [subjects, setSubjects] = useState<Subject[]>([]);
+  const [classSubjects, setClassSubjects] = useState<Subject[]>([]);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
   const API_BASE_URL = (
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
   ).replace(/\/$/, "");
@@ -131,6 +163,53 @@ export default function ManageExamsPage() {
     }
   };
 
+  const loadClassesAndSubjects = async () => {
+    try {
+      const { classesAPI } = await import("@/lib/api/api");
+      const c = await classesAPI.listClasses();
+      const s = await classesAPI.listSubjects();
+      setClasses(c);
+      setSubjects(s);
+    } catch (err) {
+      console.error("Failed to load classes/subjects:", err);
+    }
+  };
+
+  const openEditModal = async (exam: Exam) => {
+    await loadClassesAndSubjects();
+    setEditingExamId(exam.id);
+    setEditFormData({
+      title: exam.title,
+      description: exam.description || "",
+      duration_minutes: exam.duration_minutes || 30,
+      class_id: exam.class_id || null,
+      subject_id: exam.subject_id || null,
+    });
+    if (exam.class_id) {
+      const classInfo = classes.find((c) => c.id === exam.class_id);
+      if (classInfo) {
+        const classSubs = subjects.filter((s) => true); // In a real app, filter based on class
+        setClassSubjects(classSubs);
+      }
+    }
+  };
+
+  const saveExamChanges = async () => {
+    if (!token || !editingExamId) return;
+    try {
+      setIsSavingEdit(true);
+      const updated = await examsAPI.update(editingExamId, editFormData, token);
+      setExams(exams.map((e) => (e.id === editingExamId ? updated : e)));
+      setEditingExamId(null);
+      setError(null);
+    } catch (err: any) {
+      console.error("Save exam failed:", err);
+      setError(err.message || "Failed to save exam changes.");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -178,23 +257,31 @@ export default function ManageExamsPage() {
               <div className="flex items-center gap-2">
                 {(user.role === "admin" ||
                   (user.role === "teacher" && exam.created_by === user.id)) && (
-                  <button
-                    onClick={() =>
-                      handleTogglePublish(exam.id, exam.published || false)
-                    }
-                    disabled={publishing[exam.id]}
-                    className={`px-3 py-1 rounded-lg transition whitespace-nowrap ${
-                      exam.published
-                        ? "bg-orange-500 hover:bg-orange-600 text-white"
-                        : "bg-green-500 hover:bg-green-600 text-white"
-                    } disabled:opacity-50`}
-                  >
-                    {publishing[exam.id]
-                      ? "..."
-                      : exam.published
-                      ? "Unpublish"
-                      : "Publish"}
-                  </button>
+                  <>
+                    <button
+                      onClick={() => openEditModal(exam)}
+                      className="px-3 py-1 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() =>
+                        handleTogglePublish(exam.id, exam.published || false)
+                      }
+                      disabled={publishing[exam.id]}
+                      className={`px-3 py-1 rounded-lg transition whitespace-nowrap ${
+                        exam.published
+                          ? "bg-orange-500 hover:bg-orange-600 text-white"
+                          : "bg-green-500 hover:bg-green-600 text-white"
+                      } disabled:opacity-50`}
+                    >
+                      {publishing[exam.id]
+                        ? "..."
+                        : exam.published
+                        ? "Unpublish"
+                        : "Publish"}
+                    </button>
+                  </>
                 )}
 
                 <button
@@ -217,6 +304,127 @@ export default function ManageExamsPage() {
             </li>
           ))}
         </ul>
+      )}
+
+      {/* Edit Modal */}
+      {editingExamId !== null && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-white/60 backdrop-blur-sm">
+          <div className="bg-white p-6 rounded-lg w-full max-w-md shadow-lg">
+            <h3 className="text-lg font-semibold mb-4">Edit Exam</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Title
+                </label>
+                <input
+                  type="text"
+                  value={editFormData.title}
+                  onChange={(e) =>
+                    setEditFormData({ ...editFormData, title: e.target.value })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Description
+                </label>
+                <textarea
+                  value={editFormData.description}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      description: e.target.value,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                  rows={3}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Duration (minutes)
+                </label>
+                <input
+                  type="number"
+                  value={editFormData.duration_minutes}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      duration_minutes: parseInt(e.target.value) || 30,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Class
+                </label>
+                <select
+                  value={editFormData.class_id || ""}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      class_id: e.target.value ? parseInt(e.target.value) : null,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none text-gray-700"
+                >
+                  <option value="">-- Select Class --</option>
+                  {classes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name} ({c.level})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Subject
+                </label>
+                <select
+                  value={editFormData.subject_id || ""}
+                  onChange={(e) =>
+                    setEditFormData({
+                      ...editFormData,
+                      subject_id: e.target.value ? parseInt(e.target.value) : null,
+                    })
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:outline-none text-gray-700"
+                >
+                  <option value="">-- Select Subject --</option>
+                  {subjects.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={() => setEditingExamId(null)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveExamChanges}
+                disabled={isSavingEdit}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition disabled:opacity-50"
+              >
+                {isSavingEdit ? "Saving..." : "Save Changes"}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </DashboardLayout>
   );
