@@ -127,26 +127,6 @@ def delete_exam(db: Session, exam_id: int) -> bool:
     db.commit()
     return True
 
-# UPDATE EXAM
-def update_exam(db: Session, exam_id: int, title: Optional[str] = None, description: Optional[str] = None, duration_minutes: Optional[int] = None, class_id: Optional[int] = None, subject_id: Optional[int] = None):
-    """Update exam fields"""
-    exam = db.query(Exam).filter(Exam.id == exam_id).first()
-    if not exam:
-        return None
-    if title is not None:
-        exam.title = title
-    if description is not None:
-        exam.description = description
-    if duration_minutes is not None:
-        exam.duration_minutes = duration_minutes
-    if class_id is not None:
-        exam.class_id = class_id
-    if subject_id is not None:
-        exam.subject_id = subject_id
-    db.commit()
-    db.refresh(exam)
-    return exam
-
 # UPDATE EXAM PUBLISHED STATUS
 def update_exam_published(db: Session, exam_id: int, published: bool):
     """Update the published status of an exam"""
@@ -161,10 +141,6 @@ def update_exam_published(db: Session, exam_id: int, published: bool):
 # GET QUESTIONS
 def get_questions_for_exam(db: Session, exam_id: int):
     return db.query(Question).filter(Question.exam_id == exam_id).all()
-
-
-def get_question(db: Session, question_id: int):
-    return db.query(Question).filter(Question.id == question_id).first()
 
 def add_question(db: Session, creator_id: int, exam_id: int, text: str, options: list, correct_answer: int, marks: int = 1, image_url: str = None):
     if not options:
@@ -192,54 +168,6 @@ def add_question(db: Session, creator_id: int, exam_id: int, text: str, options:
         db.rollback()
         raise
     return q
-
-
-# UPDATE QUESTION
-def update_question(db: Session, question_id: int, updater_id: int, text: Optional[str] = None, options: Optional[list] = None, correct_answer: Optional[int] = None, marks: Optional[int] = None, image_url: Optional[str] = None):
-    q = db.query(Question).filter(Question.id == question_id).first()
-    if not q:
-        raise ValueError("Question not found")
-
-    # If options provided, validate correct_answer index (if provided)
-    if options is not None:
-        if len(options) < 2:
-            raise ValueError("Options must contain at least two items")
-        q.options = options
-    if correct_answer is not None:
-        if q.options is None:
-            raise ValueError("Cannot set correct_answer without options")
-        if correct_answer < 0 or correct_answer >= len(q.options):
-            raise ValueError("correct_answer index out of range")
-        q.correct_answer = correct_answer
-    if text is not None:
-        q.text = text
-    if marks is not None:
-        q.marks = marks
-    if image_url is not None:
-        q.image_url = image_url
-
-    try:
-        db.add(q)
-        db.commit()
-        db.refresh(q)
-    except Exception:
-        db.rollback()
-        raise
-    return q
-
-
-# DELETE QUESTION
-def delete_question(db: Session, question_id: int) -> bool:
-    q = db.query(Question).filter(Question.id == question_id).first()
-    if not q:
-        return False
-    try:
-        db.delete(q)
-        db.commit()
-    except Exception:
-        db.rollback()
-        raise
-    return True
 
 
 # existing functions...

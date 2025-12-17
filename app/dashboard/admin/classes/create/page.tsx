@@ -2,12 +2,11 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getStoredToken } from "@/lib/api/token";
+import {
+  getStoredToken,
+} from "@/lib/api/token";
 import { classesAPI } from "@/lib/api/api";
 import type { SchoolLevel, Subject } from "@/lib/api";
-import Card from "@/components/ui/Card";
-import Input from "@/components/ui/Input";
-import Button from "@/components/ui/Button";
 export default function CreateClassPage() {
   const router = useRouter();
   const token = getStoredToken();
@@ -113,30 +112,6 @@ export default function CreateClassPage() {
 
     setLoading(true);
     try {
-      // Ensure all custom subject names exist in global subjects list
-      const currentSubjects = [...allSubjects];
-      const missing = subjects.filter(
-        (name) => !currentSubjects.some((s) => s.name === name)
-      );
-      if (missing.length > 0) {
-        for (const name of missing) {
-          // create a simple code from the name
-          const code = name
-            .split(" ")
-            .map((w) => w[0])
-            .join("")
-            .slice(0, 6)
-            .toUpperCase();
-          try {
-            const created = await classesAPI.createSubject({ name, code }, token || undefined);
-            currentSubjects.push(created);
-          } catch (err) {
-            console.warn("Failed to create subject:", name, err);
-          }
-        }
-        // refresh allSubjects state
-        setAllSubjects(currentSubjects);
-      }
       // First, check if class already exists
       const classes = await classesAPI.getClassesByLevel(selectedLevel);
       const existingClass = classes.find(c => c.name === derivedClassName);
@@ -145,8 +120,11 @@ export default function CreateClassPage() {
 
       if (existingClass) {
         // Update existing class
-        const subjectIds = currentSubjects.filter((s) => subjects.includes(s.name)).map((s) => s.id);
-        await classesAPI.updateClassSubjects(existingClass.id, subjectIds, token);
+        await classesAPI.updateClassSubjects(
+          existingClass.id,
+          allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id),
+          token
+        );
         classId = existingClass.id;
       } else {
         // Create new class
@@ -157,7 +135,7 @@ export default function CreateClassPage() {
         classId = newClass.id;
 
         // Update subjects for the new class
-        const subjectIds = currentSubjects.filter((s) => subjects.includes(s.name)).map((s) => s.id);
+        const subjectIds = allSubjects.filter(s => subjects.includes(s.name)).map(s => s.id);
         if (subjectIds.length > 0) {
           await classesAPI.updateClassSubjects(classId, subjectIds, token);
         }
@@ -181,10 +159,11 @@ export default function CreateClassPage() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--background)] p-6">
-      <div className="w-full max-w-2xl mx-auto">
-        <Card className="p-8">
-          <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">Create / Update Class</h1>
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-indigo-500 to-purple-600 p-4">
+      <div className="w-full max-w-md bg-white rounded-lg shadow-xl p-8">
+        <h1 className="text-3xl font-bold mb-6 text-gray-800 text-center">
+          Create / Update Class
+        </h1>
 
         {message && (
           <div className="mb-4 p-4 bg-green-100 text-green-700 rounded-lg border border-green-300">
@@ -205,7 +184,7 @@ export default function CreateClassPage() {
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-[var(--color-primary)] focus:outline-none transition"
+              className="w-full p-3 border-2 border-gray-300 rounded-lg focus:border-indigo-500 focus:outline-none transition"
             >
               <option value="">-- Select a level --</option>
               {schoolLevels.map((level) => (
@@ -224,36 +203,70 @@ export default function CreateClassPage() {
           </div>
 
           {/* Subjects Management */}
-          <Card className="bg-[var(--surface)]">
-            <p className="text-sm font-semibold text-gray-800 mb-2">Subjects for this class:</p>
+          <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
+            <p className="text-sm font-semibold text-blue-900 mb-2">
+              Subjects for this class:
+            </p>
             <div className="flex flex-wrap gap-2 mb-2">
               {subjects.map((subject, idx) => (
-                <span key={idx} className="text-xs bg-gray-100 text-gray-800 px-2 py-1 rounded flex items-center gap-1">
+                <span
+                  key={idx}
+                  className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded flex items-center gap-1"
+                >
                   {subject}
-                  <Button variant="ghost" onClick={() => removeSubject(subject)} className="text-red-600 px-2">×</Button>
+                  <button
+                    type="button"
+                    onClick={() => removeSubject(subject)}
+                    className="text-red-600 font-bold"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
             <div className="flex gap-2">
-              <Input type="text" value={newSubject} onChange={(e) => setNewSubject(e.target.value)} placeholder="Add custom subject" />
-              <Button type="button" onClick={addCustomSubject} variant="primary">Add</Button>
+              <input
+                type="text"
+                value={newSubject}
+                onChange={(e) => setNewSubject(e.target.value)}
+                placeholder="Add custom subject"
+                className="flex-1 p-2 border rounded"
+              />
+              <button
+                type="button"
+                onClick={addCustomSubject}
+                className="bg-green-600 text-white px-3 rounded"
+              >
+                Add
+              </button>
             </div>
-          </Card>
+          </div>
 
-          <Button type="submit" variant="primary" className="w-full mt-6 py-3" disabled={loading}>
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full mt-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition"
+          >
             {loading ? "Saving..." : "Save Class"}
-          </Button>
+          </button>
 
           <div className="flex gap-3">
-            <Button type="button" variant="secondary" onClick={() => router.push("/dashboard/admin")} className="flex-1 py-2">
+            <button
+              type="button"
+              onClick={() => router.push("/dashboard/admin")}
+              className="flex-1 py-2 text-gray-600 font-semibold rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition"
+            >
               Go to Dashboard
-            </Button>
-            <Button type="button" variant="secondary" onClick={() => router.back()} className="flex-1 py-2">
+            </button>
+            <button
+              type="button"
+              onClick={() => router.back()}
+              className="flex-1 py-2 text-gray-600 font-semibold rounded-lg border-2 border-gray-300 hover:bg-gray-50 transition"
+            >
               Back
-            </Button>
+            </button>
           </div>
         </form>
-        </Card>
       </div>
     </div>
   );

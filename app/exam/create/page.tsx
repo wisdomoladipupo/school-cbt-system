@@ -4,12 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { Editor } from "@tinymce/tinymce-react";
 import { getStoredToken } from "@/lib/api";
 import { questionsAPI, classesAPI, examsAPI } from "@/lib/api/api";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
-import Input from "@/components/ui/Input";
 
 interface Question {
-  id?: number;
   question: string;
   options: string[];
   correctAnswer: number | null;
@@ -71,23 +67,8 @@ export default function CreateExamBuilder() {
   const addQuestion = () =>
     setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: null }]);
 
-  const removeQuestion = async (index: number) => {
+  const removeQuestion = (index: number) => {
     if (questions.length === 1) return;
-    const q = questions[index];
-    
-    // If question has an id, it exists in DB and needs to be deleted
-    if (q.id && token) {
-      if (!window.confirm("Delete this question permanently? This cannot be undone.")) {
-        return;
-      }
-      try {
-        await questionsAPI.delete(q.id, token);
-      } catch (err) {
-        alert(`Failed to delete question: ${err instanceof Error ? err.message : "Unknown error"}`);
-        return;
-      }
-    }
-    
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
@@ -130,68 +111,6 @@ export default function CreateExamBuilder() {
     setQuestions(updated);
   };
 
-  // Save a single question (create or update depending on presence of id)
-  const saveQuestion = async (index: number) => {
-    if (!token) return alert("Please login first");
-    const q = questions[index];
-    if (!createdExamId) return alert("Please save or create the exam first so questions can be persisted.");
-
-    try {
-      if (q.id) {
-        // update
-        const updated = await questionsAPI.update(q.id, {
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer,
-          marks: 1,
-          image_url: q.imageUrl,
-        }, token);
-        // update local
-        setQuestions((prev) => {
-          const out = [...prev];
-          out[index] = { ...out[index], question: updated.text, options: updated.options, correctAnswer: updated.correct_answer, imageUrl: updated.image_url };
-          return out;
-        });
-        alert("Question updated");
-      } else {
-        // create
-        const created = await questionsAPI.create({
-          exam_id: createdExamId,
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer as number,
-          marks: 1,
-          image_url: q.imageUrl,
-        } as any, token);
-        setQuestions((prev) => {
-          const out = [...prev];
-          out[index].id = created.id;
-          return out;
-        });
-        alert("Question saved to server");
-      }
-    } catch (err) {
-      console.error("Failed to save question:", err);
-      alert(err instanceof Error ? err.message : "Failed to save question");
-    }
-  };
-
-  const deleteQuestion = async (index: number) => {
-    if (!token) return alert("Please login first");
-    const q = questions[index];
-    try {
-      if (q.id) {
-        await questionsAPI.delete(q.id, token);
-      }
-      // remove locally
-      setQuestions((prev) => prev.filter((_, i) => i !== index));
-      alert("Question deleted");
-    } catch (err) {
-      console.error("Failed to delete question:", err);
-      alert(err instanceof Error ? err.message : "Failed to delete question");
-    }
-  };
-
   // -------------------- Exam Submission --------------------
   const submitExam = async () => {
     if (!title.trim()) return alert("Please provide an exam title");
@@ -220,10 +139,9 @@ export default function CreateExamBuilder() {
       const createdExam = await examsAPI.create(examPayload as any, token);
       setCreatedExamId(createdExam.id);
 
-      // Create questions (only non-empty ones). Capture created IDs so UI can edit/delete later.
-      for (let i = 0; i < nonEmptyQuestions.length; i++) {
-        const q = nonEmptyQuestions[i];
-        const createdQ: any = await questionsAPI.create(
+      // Create questions (only non-empty ones)
+      for (const q of nonEmptyQuestions) {
+        await questionsAPI.create(
           {
             exam_id: createdExam.id,
             text: q.question,
@@ -234,14 +152,6 @@ export default function CreateExamBuilder() {
           } as any,
           token
         );
-        // Update local questions state to include created id
-        setQuestions((prev) => {
-          const updated = [...prev];
-          // find matching question by text and options (best-effort) and set id
-          const idx = updated.findIndex((qq) => qq.question === q.question && JSON.stringify(qq.options) === JSON.stringify(q.options));
-          if (idx >= 0) updated[idx].id = createdQ.id;
-          return updated;
-        });
       }
 
       alert("Exam and questions saved successfully");
@@ -284,7 +194,7 @@ export default function CreateExamBuilder() {
 
         const examPayload = {
           title,
-          description: "",
+          description,
           duration_minutes: duration,
           published: false,
           class_id: selectedClass,
@@ -303,7 +213,6 @@ export default function CreateExamBuilder() {
       // Refresh questions in builder
       const updatedQuestions = await questionsAPI.getForExam(examId, token);
       const mapped = updatedQuestions.map((q: any) => ({
-        id: q.id,
         question: q.text,
         options: q.options,
         correctAnswer: q.correct_answer,
@@ -324,20 +233,21 @@ export default function CreateExamBuilder() {
       <h1 className="text-3xl font-bold text-gray-900">Exam Builder</h1>
 
       {/* Exam Metadata */}
-      <Card>
+      <div className="bg-white p-4 rounded shadow-sm border border-gray-200">
         <div className="grid grid-cols-1 gap-3">
-          <Input
+          <input
             type="text"
             placeholder="Exam Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
+            className="w-full p-2 border rounded text-black"
           />
-          <div className="flex gap-3 items-center">
-            <Input
+          <div className="flex gap-3">
+            <input
               type="number"
               value={duration}
               onChange={(e) => setDuration(parseInt(e.target.value || "30"))}
-              className="w-32"
+              className="w-32 p-2 border rounded text-black"
             />
             <select
               value={selectedClass ?? ""}
@@ -370,10 +280,14 @@ export default function CreateExamBuilder() {
             </select>
           </div>
         </div>
-      </Card>
+      </div>
 
       {/* Import Document */}
-      <div>
+      <label
+        className="cursor-pointer bg-gray-200 px-4 py-2 rounded hover:bg-gray-300"
+        onClick={handleImportClick}
+      >
+        {importingFile ? "Importing..." : "Import Exam Document"}
         <input
           type="file"
           ref={fileInputRef}
@@ -381,38 +295,26 @@ export default function CreateExamBuilder() {
           className="hidden"
           onChange={(e) => e.target.files?.[0] && handleImportDocument(e.target.files[0])}
         />
-        <Button variant="secondary" onClick={handleImportClick} className="inline-flex">
-          {importingFile ? "Importing..." : "Import Exam Document"}
-        </Button>
-      </div>
+      </label>
 
       {/* Questions */}
       {questions.map((q, index) => (
-        <Card key={index} className="rounded-xl space-y-6">
+        <div
+          key={index}
+          className="bg-white rounded-xl shadow-md p-6 space-y-6 border border-gray-200"
+        >
           <div className="flex justify-between items-center">
             <h2 className="text-xl font-semibold text-gray-800">
               Question {index + 1}
             </h2>
-            <div className="flex gap-2">
-              {q.id && (
-                <Button
-                  variant="ghost"
-                  onClick={() => saveQuestion(index)}
-                  className="text-blue-600 hover:text-blue-800 font-medium text-sm"
-                >
-                  Save
-                </Button>
-              )}
-              {questions.length > 1 && (
-                <Button
-                  variant="ghost"
-                  onClick={() => removeQuestion(index)}
-                  className="text-red-600 hover:text-red-800 font-medium text-sm"
-                >
-                  {q.id ? "Delete" : "Remove"}
-                </Button>
-              )}
-            </div>
+            {questions.length > 1 && (
+              <button
+                onClick={() => removeQuestion(index)}
+                className="text-red-600 hover:text-red-800 font-medium"
+              >
+                Remove
+              </button>
+            )}
           </div>
 
           {/* Question Editor */}
@@ -443,26 +345,33 @@ export default function CreateExamBuilder() {
                   onChange={() => setCorrect(index, optIndex)}
                   className="accent-indigo-600 w-4 h-4"
                 />
-                <Input
+                <input
                   type="text"
                   value={opt}
                   onChange={(e) => updateOption(index, optIndex, e.target.value)}
                   placeholder={`Option ${optIndex + 1}`}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                 />
               </div>
             ))}
           </div>
-        </Card>
+        </div>
       ))}
 
       {/* Actions */}
       <div className="flex flex-wrap gap-4">
-        <Button variant="ghost" onClick={addQuestion} className="px-5 py-2">
+        <button
+          onClick={addQuestion}
+          className="px-5 py-2 bg-gray-200 text-gray-900 rounded-lg font-medium hover:bg-gray-300 transition"
+        >
           + Add Another Question
-        </Button>
-        <Button variant="primary" onClick={submitExam} className="px-6 py-3">
-          {saving ? "Saving..." : "Save Exam"}
-        </Button>
+        </button>
+        <button
+          onClick={submitExam}
+          className="px-6 py-3 bg-indigo-600 text-white rounded-lg font-semibold hover:bg-indigo-700 transition"
+        >
+          Save Exam
+        </button>
       </div>
     </div>
   );

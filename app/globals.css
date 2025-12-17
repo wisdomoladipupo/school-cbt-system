@@ -1,43 +1,26 @@
 @import "tailwindcss";
 
 :root {
-  /* Design tokens */
-  --color-primary: #4F46E5; /* Indigo-600 alternative */
-  --color-primary-contrast: #ffffff;
-  --color-muted: #6b7280; /* gray-500 */
   --background: #ffffff;
-  --surface: #ffffff;
-  --foreground: #111827; /* gray-900 */
-
-  /* Typography */
-  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
-
-  /* Spacing scale (useful for component padding) */
-  --space-1: 0.25rem;
-  --space-2: 0.5rem;
-  --space-3: 0.75rem;
-  --space-4: 1rem;
+  --foreground: #f1eaea;
 }
 
-/* Remove dark-mode overrides to keep light background across the redesign */
-/* Dark mode tokens intentionally omitted so the site maintains a light backdrop */
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
 
-/* Tailwind-friendly utility tokens (optional) */
-.theme-primary {
-  background-color: var(--color-primary);
-  color: var(--color-primary-contrast);
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #d2caca;
+    --foreground: #ededed;
+  }
 }
 
 body {
-  @apply bg-white text-gray-900 antialiased;
-  background: var(--background);
+  @apply bg-white text-gray-900;
   color: var(--foreground);
-  font-family: var(--font-sans);
-}
-
-/* Small helpers to standardize focus outlines */
-:focus-visible {
-  outline: 2px solid var(--color-primary);
-  outline-offset: 2px;
+  font-family: Arial, Helvetica, sans-serif;
 }
