@@ -1,26 +1,48 @@
 @import "tailwindcss";
 
 :root {
+  /* Design tokens */
+  --color-primary: #4F46E5; /* Indigo-600 alternative */
+  --color-primary-contrast: #ffffff;
+  --color-muted: #6b7280; /* gray-500 */
   --background: #ffffff;
-  --foreground: #f1eaea;
-}
+  --surface: #ffffff;
+  --foreground: #111827; /* gray-900 */
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Typography */
+  --font-sans: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, "Roboto Mono", "Courier New", monospace;
+
+  /* Spacing scale (useful for component padding) */
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #d2caca;
-    --foreground: #ededed;
+    --background: #0b1220;
+    --surface: #071025;
+    --foreground: #e6eef8;
   }
 }
 
+/* Tailwind-friendly utility tokens (optional) */
+.theme-primary {
+  background-color: var(--color-primary);
+  color: var(--color-primary-contrast);
+}
+
 body {
-  @apply bg-white text-gray-900;
+  @apply bg-white text-gray-900 antialiased;
+  background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+}
+
+/* Small helpers to standardize focus outlines */
+:focus-visible {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
 }
