@@ -98,19 +98,20 @@ export default function ExamPage() {
     if (!token || !editFormData || !editingQuestionId) return;
     try {
       setIsSavingEdit(true);
-      await questionsAPI.update(editingQuestionId, {
+      setError(null); // Clear error before attempting save
+      const updatedQuestion = await questionsAPI.update(editingQuestionId, {
         text: editFormData.text,
         options: editFormData.options,
         correct_answer: editFormData.correct_answer,
         marks: editFormData.marks,
         image_url: editFormData.image_url,
       }, token);
-      // Update local state
-      setQuestions(questions.map((q) => (q.id === editingQuestionId ? editFormData : q)));
+      // Update local state with response data to ensure consistency
+      setQuestions(questions.map((q) => (q.id === editingQuestionId ? updatedQuestion : q)));
       setEditingQuestionId(null);
       setEditFormData(null);
-      setError(null); // Clear any previous errors on successful save
     } catch (err: any) {
+      console.error("Failed to save question:", err);
       setError(err.message || "Failed to save question changes");
     } finally {
       setIsSavingEdit(false);
@@ -328,6 +329,7 @@ export default function ExamPage() {
                 onClick={() => {
                   setEditingQuestionId(null);
                   setEditFormData(null);
+                  setError(null); // Clear error when canceling
                 }}
                 className="px-4 py-2 bg-gray-200 text-gray-800 rounded-lg hover:bg-gray-300 transition"
               >
