@@ -113,7 +113,7 @@ export default function AddUserModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} />
+      <div className="absolute inset-0 bg-white/60 backdrop-blur-sm" onClick={onClose} />
 
       <div className="relative bg-white rounded-xl p-6 w-full max-w-md shadow-xl z-10 space-y-4">
         <h2 className="text-xl font-bold">Add New User</h2>

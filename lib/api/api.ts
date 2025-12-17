@@ -383,6 +383,25 @@ export const examsAPI = {
     return res.json();
   },
 
+  update: async (examId: number, payload: Partial<any>, token: string): Promise<Exam> => {
+    const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(
+        err.detail || `Failed to update exam (status ${res.status})`
+      );
+    }
+    return res.json();
+  },
+
   togglePublish: async (
     examId: number,
     publish: boolean,
@@ -463,6 +482,34 @@ export const questionsAPI = {
     }
 
     return response.json();
+  },
+
+  update: async (questionId: number, payload: Partial<any>, token: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to update question (status ${res.status})`);
+    }
+    return res.json();
+  },
+
+  delete: async (questionId: number, token: string) => {
+    const res = await fetch(`${API_BASE_URL}/api/questions/${questionId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || `Failed to delete question (status ${res.status})`);
+    }
+    return res.json();
   },
 };
 
@@ -746,6 +793,24 @@ export const classesAPI = {
     return response.json();
   },
 
+  createSubject: async (
+    data: { name: string; code?: string; description?: string },
+    token?: string
+  ): Promise<Subject> => {
+    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    const res = await fetch(`${API_BASE_URL}/api/classes/subjects`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(data),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || "Failed to create subject");
+    }
+    return res.json();
+  },
+
   getClassSubjectsWithTeachers: async (classId: number): Promise<any[]> => {
     const response = await fetch(
       `${API_BASE_URL}/api/classes/${classId}/subjects-with-teachers`,
@@ -780,6 +845,24 @@ export const classesAPI = {
     );
 
     if (!response.ok) throw new Error("Failed to assign teacher to subject");
+    return response.json();
+  },
+
+  getClassStudents: async (classId: number): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/students`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch class students");
+    return response.json();
+  },
+
+  getClassTeachers: async (classId: number): Promise<any[]> => {
+    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/teachers`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (!response.ok) throw new Error("Failed to fetch class teachers");
     return response.json();
   },
 
