@@ -3,7 +3,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Modal from "@/components/ui/Modal";
 import StudentForm from "@/components/students/studentForm";
-import AdminClassManagementEnhanced from "@/components/admin/ClassManagementEnhanced";
+import AdminClassManagement from "@/components/admin/ClassManagement";
 import { usersAPI, examsAPI } from "@/lib/api/api";
 
 export default function AdminDashboardPage() {
@@ -16,13 +16,13 @@ export default function AdminDashboardPage() {
   const [totalStudents, setTotalStudents] = useState<number | null>(null);
   const [totalTeachers, setTotalTeachers] = useState<number | null>(null);
   const [activeExams, setActiveExams] = useState<number | null>(null);
-  const [token, setToken] = useState<string>("");
-
-  // Get token from localStorage
-  useEffect(() => {
-    const storedToken = localStorage.getItem("access_token");
-    if (storedToken) setToken(storedToken);
-  }, []);
+  const [token, setToken] = useState<string | null>(() => {
+    // Initialize token from localStorage during component initialization
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("access_token");
+    }
+    return null;
+  });
 
   // Fetch overview stats
   useEffect(() => {
@@ -152,7 +152,7 @@ export default function AdminDashboardPage() {
       )}
 
       {/* Class Management Tab */}
-      {activeTab === "classes" && <AdminClassManagementEnhanced />}
+      {activeTab === "classes" && <AdminClassManagement />}
 
       {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)}>
