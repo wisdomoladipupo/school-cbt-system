@@ -9,13 +9,6 @@ class ExamCreate(BaseModel):
     class_id: Optional[int] = None
     subject_id: Optional[int] = None
 
-class ExamUpdate(BaseModel):
-    title: Optional[str] = None
-    description: Optional[str] = None
-    duration_minutes: Optional[int] = None
-    class_id: Optional[int] = None
-    subject_id: Optional[int] = None
-
 class ExamOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     

@@ -7,8 +7,6 @@ import StudentList from "@/components/students/studentList";
 import StudentForm from "@/components/students/studentForm";
 import TeacherClassManagement from "@/components/teacher/ClassManagement";
 import Modal from "@/components/ui/Modal";
-import Card from "@/components/ui/Card";
-import Button from "@/components/ui/Button";
 import { Student } from "@/components/students/studentCard";
 import { getStoredToken, User } from "@/lib/api";
 import { usersAPI } from "@/lib/api/api";
@@ -103,34 +101,46 @@ export default function TeacherDashboardPage() {
         <>
           {/* Dashboard Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-700">Classes Assigned</h3>
+            <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-700">
+                Classes Assigned
+              </h3>
               <p className="text-3xl font-bold mt-2 text-gray-900">4</p>
-            </Card>
+            </div>
 
-            <Card>
-              <h3 className="text-lg font-semibold text-gray-700">Exams Created</h3>
+            <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
+              <h3 className="text-lg font-semibold text-gray-700">
+                Exams Created
+              </h3>
               <p className="text-3xl font-bold mt-2 text-gray-900">19</p>
-            </Card>
+            </div>
           </div>
 
           {/* Quick Actions */}
-          <Card>
-            <h3 className="text-xl font-semibold mb-4 text-gray-800">Actions</h3>
+          <div className="p-6 bg-white rounded-2xl shadow border border-gray-100">
+            <h3 className="text-xl font-semibold mb-4 text-gray-800">
+              Actions
+            </h3>
             <div className="flex gap-4 flex-wrap">
-              <Button onClick={() => setIsModalOpen(true)} className="px-5 py-3" variant="secondary">
+              <button
+                className="px-5 py-3 bg-blue-50 text-blue-700 font-medium rounded-xl shadow hover:bg-blue-100 transition"
+                onClick={() => setIsModalOpen(true)}
+              >
                 Add Student
-              </Button>
+              </button>
 
-              <Button onClick={() => router.push("/exam/create")} className="px-5 py-3" variant="secondary">
+              <button
+                className="px-5 py-3 bg-green-50 text-green-700 font-medium rounded-xl shadow hover:bg-green-100 transition"
+                onClick={() => router.push("/exam/create")}
+              >
                 Create Exam
-              </Button>
+              </button>
 
-              <Button className="px-5 py-3" variant="ghost">
+              <button className="px-5 py-3 bg-gray-50 text-gray-700 font-medium rounded-xl shadow hover:bg-gray-100 transition">
                 Grade Results
-              </Button>
+              </button>
             </div>
-          </Card>
+          </div>
 
           {/* Error or Student List */}
           {error && (
