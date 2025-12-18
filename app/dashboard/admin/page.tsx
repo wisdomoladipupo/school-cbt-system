@@ -48,11 +48,57 @@ export default function AdminDashboardPage() {
     fetchOverview();
   }, [token]);
 
-  const handleAddStudent = () => {
-    setIsModalOpen(false);
-    // Optionally refresh students count after adding
-    if (token) {
-      usersAPI.listStudents(token).then((s) => setTotalStudents(s.length));
+  const handleAddStudent = async (studentData: any) => {
+    if (!token) {
+      console.error("No authentication token found");
+      return;
+    }
+
+    try {
+      // Create the student user with role 'student'
+      const newUser = await usersAPI.create(
+        {
+          full_name: studentData.name,
+          email: studentData.email,
+          password: "defaultPassword123!", // You might want to generate a random password or set a default
+          role: "student",
+          registration_number: studentData.regNumber,
+          student_class: studentData.className,
+          passport: studentData.passport,
+        },
+        token
+      );
+
+      // If classId is provided, assign student to class
+      if (studentData.classId) {
+        try {
+          await classesAPI.assignStudentToClass(
+            studentData.classId,
+            newUser.id,
+            token
+          );
+        } catch (classError) {
+          console.error("Error assigning student to class:", classError);
+          // Continue even if class assignment fails
+        }
+      }
+
+      // Update the students count
+      const updatedStudents = await usersAPI.listStudents(token);
+      setTotalStudents(updatedStudents.length);
+
+      // Close the modal
+      setIsModalOpen(false);
+
+      // Show success message (you might want to add a toast notification)
+      alert("Student created successfully!");
+    } catch (error) {
+      console.error("Error creating student:", error);
+      alert(
+        `Failed to create student: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     }
   };
 
