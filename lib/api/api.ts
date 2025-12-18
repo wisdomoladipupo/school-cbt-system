@@ -19,7 +19,7 @@ import type {
 } from "./types";
 
 const API_BASE_URL = (
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
+  process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000"
 ).replace(/\/$/, "");
 
 import { getStoredToken } from "./token";
@@ -383,7 +383,11 @@ export const examsAPI = {
     return res.json();
   },
 
-  update: async (examId: number, payload: Partial<any>, token: string): Promise<Exam> => {
+  update: async (
+    examId: number,
+    payload: Partial<any>,
+    token: string
+  ): Promise<Exam> => {
     const res = await fetch(`${API_BASE_URL}/api/exams/${examId}`, {
       method: "PUT",
       headers: {
@@ -495,7 +499,9 @@ export const questionsAPI = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to update question (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to update question (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -507,7 +513,9 @@ export const questionsAPI = {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      throw new Error(err.detail || `Failed to delete question (status ${res.status})`);
+      throw new Error(
+        err.detail || `Failed to delete question (status ${res.status})`
+      );
     }
     return res.json();
   },
@@ -772,12 +780,18 @@ export const classesAPI = {
         body && typeof body === "object" ? body.detail || body.message : body;
 
       // Map server message about existing assignment to a user-friendly, consistent message
-      if (serverMsg && typeof serverMsg === "string" && /already assigned/i.test(serverMsg)) {
+      if (
+        serverMsg &&
+        typeof serverMsg === "string" &&
+        /already assigned/i.test(serverMsg)
+      ) {
         throw new Error("students already assigned to a class");
       }
 
       throw new Error(
-        (serverMsg && typeof serverMsg === "string" ? serverMsg : "Failed to assign student to class")
+        serverMsg && typeof serverMsg === "string"
+          ? serverMsg
+          : "Failed to assign student to class"
       );
     }
 
@@ -797,7 +811,9 @@ export const classesAPI = {
     data: { name: string; code?: string; description?: string },
     token?: string
   ): Promise<Subject> => {
-    const headers: Record<string, string> = { "Content-Type": "application/json" };
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
     if (token) headers.Authorization = `Bearer ${token}`;
     const res = await fetch(`${API_BASE_URL}/api/classes/subjects`, {
       method: "POST",
@@ -849,19 +865,25 @@ export const classesAPI = {
   },
 
   getClassStudents: async (classId: number): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/students`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/students`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     if (!response.ok) throw new Error("Failed to fetch class students");
     return response.json();
   },
 
   getClassTeachers: async (classId: number): Promise<any[]> => {
-    const response = await fetch(`${API_BASE_URL}/api/classes/${classId}/teachers`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-    });
+    const response = await fetch(
+      `${API_BASE_URL}/api/classes/${classId}/teachers`,
+      {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+      }
+    );
     if (!response.ok) throw new Error("Failed to fetch class teachers");
     return response.json();
   },

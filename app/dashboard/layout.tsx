@@ -61,75 +61,195 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen flex bg-gray-50 text-gray-900">
-      {/* Sidebar */}
-      <aside className="w-64 bg-indigo-900 text-white p-6 shadow-lg">
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold">School CBT</h1>
-          <p className="text-indigo-300 text-sm mt-1 capitalize">
-            {userRole} Portal
-          </p>
+      {/* Modern Sidebar */}
+      <aside className="w-72 bg-gradient-to-b from-indigo-900 to-indigo-800 text-white flex flex-col h-screen sticky top-0 shadow-xl">
+        <div className="p-6 pb-2">
+          <div className="flex items-center space-x-3 mb-8">
+            <div className="w-10 h-10 rounded-lg bg-indigo-600 flex items-center justify-center">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6 text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-xl font-bold">School CBT</h1>
+              <p className="text-indigo-200 text-xs font-medium tracking-wide uppercase">
+                {userRole} Portal
+              </p>
+            </div>
+          </div>
+
+          <nav className="space-y-1">
+            <Link
+              href="/dashboard"
+              className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+                />
+              </svg>
+              Dashboard
+            </Link>
+
+            {userRole === "admin" && (
+              <>
+                <Link
+                  href="/dashboard/admin/users"
+                  className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"
+                    />
+                  </svg>
+                  Manage Users
+                </Link>
+                <Link
+                  href="/exam/create"
+                  className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                    />
+                  </svg>
+                  Create Exam
+                </Link>
+              </>
+            )}
+
+            {(userRole === "teacher" || userRole === "admin") && (
+              <Link
+                href="/exam/manage"
+                className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+                Manage Exams
+              </Link>
+            )}
+
+            {userRole === "student" && (
+              <Link
+                href="/exam"
+                className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                  />
+                </svg>
+                Take Exam
+              </Link>
+            )}
+
+            {(userRole === "admin" || userRole === "teacher") && (
+              <Link
+                href="/results"
+                className="flex items-center px-4 py-3 text-sm font-medium rounded-lg transition-all duration-200 hover:bg-indigo-700/50 group"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-5 w-5 mr-3 text-indigo-300 group-hover:text-white"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                  />
+                </svg>
+                Results
+              </Link>
+            )}
+          </nav>
         </div>
 
-        <nav className="space-y-2">
-          <Link
-            href="/dashboard"
-            className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-          >
-            Dashboard
-          </Link>
-
-          {userRole === "admin" && (
-            <>
-              <Link
-                href="/dashboard/admin/users"
-                className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
+        <div className="p-6 pt-4 mt-auto">
+          <div className="border-t border-indigo-700 pt-4">
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center justify-center px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 rounded-lg text-sm font-medium text-white shadow-md hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-[1.02]"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                Manage Users
-              </Link>
-              <Link
-                href="/exam/create"
-                className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-              >
-                Create Exam
-              </Link>
-            </>
-          )}
-
-          {(userRole === "teacher" || userRole === "admin") && (
-            <Link
-              href="/exam/manage"
-              className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-            >
-              Manage Exams
-            </Link>
-          )}
-
-          {userRole === "student" && (
-            <Link
-              href="/exam"
-              className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-            >
-              Take Exam
-            </Link>
-          )}
-
-          {(userRole === "admin" || userRole === "teacher") && (
-            <Link
-              href="/results"
-              className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
-            >
-              Results
-            </Link>
-          )}
-        </nav>
-
-        <div className="mt-auto pt-6 border-t border-indigo-800">
-          <button
-            onClick={handleLogout}
-            className="w-full px-4 py-2 bg-red-600 rounded hover:bg-red-700 transition text-sm font-medium"
-          >
-            Logout
-          </button>
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"
+                />
+              </svg>
+              Logout
+            </button>
+          </div>
         </div>
       </aside>
 

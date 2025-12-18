@@ -1,32 +1,46 @@
 "use client";
 
-import React from "react";
+import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { getStoredUser, clearStoredAuth } from "@/lib/api";
 
 export default function Navbar() {
-  // Direct synchronous read – no state needed
-  const user = getStoredUser();
+  const [user, setUser] = useState(null);
+  const [isClient, setIsClient] = useState(false);
+
+  useEffect(() => {
+    // This code only runs on the client side
+    setIsClient(true);
+    setUser(getStoredUser());
+  }, []);
 
   return (
     <nav className="w-full bg-white shadow-sm px-6 py-4 flex justify-between items-center">
       <div className="flex items-center gap-4">
-        <div className="h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold">CB</div>
-        <h1 className="text-lg font-semibold text-[var(--color-primary)]">School CBT System</h1>
+        <div className="h-10 w-10 rounded-full bg-[var(--color-primary)] flex items-center justify-center text-white font-bold">
+          CB
+        </div>
+        <h1 className="text-lg font-semibold text-[var(--color-primary)]">
+          School CBT System
+        </h1>
       </div>
 
       <div className="flex items-center gap-6">
-        {user && (
+        {isClient && user && (
           <div className="text-gray-700 capitalize text-sm">
-            {user.full_name} <span className="text-xs text-gray-500">({user.role})</span>
+            {user.full_name}{" "}
+            <span className="text-xs text-gray-500">({user.role})</span>
           </div>
         )}
 
-        <Link href="/dashboard" className="text-sm text-gray-700 hover:text-[var(--color-primary)]">
+        <Link
+          href="/dashboard"
+          className="text-sm text-gray-700 hover:text-[var(--color-primary)]"
+        >
           Dashboard
         </Link>
 
-        {user && (
+        {isClient && user && (
           <button
             onClick={() => {
               clearStoredAuth();

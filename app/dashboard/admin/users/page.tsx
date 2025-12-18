@@ -2,11 +2,42 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { usersAPI, classesAPI } from "@/lib/api/api";
-import { User, Class } from "@/lib/api";
+import { Class as ApiClass } from "@/lib/api";
+import UsersTable from "../usersTable";
+
+// Define User type with all required fields
+type User = {
+  id: number;
+  full_name: string;
+  email: string;
+  role: "admin" | "teacher" | "student";
+  reg_number?: string;
+  passport?: string;
+  class_id?: number;
+  created_at?: string;
+  updated_at?: string;
+};
+
+type UserFormData = {
+  full_name: string;
+  email: string;
+  password: string;
+  role: "admin" | "teacher" | "student";
+  class_id: string | number;
+  passport: string;
+};
+
+type EditUserFormData = {
+  full_name: string;
+  password: string;
+  role: "admin" | "teacher" | "student";
+  class_id: string | number;
+  passport: string;
+};
 
 type DetailsEditFormProps = {
   user: User;
-  classes: Class[];
+  classes: ApiClass[];
   token: string;
   onCancel: () => void;
   onSave: (updatedUser: User, classId?: number | null) => void;
@@ -21,9 +52,7 @@ function DetailsEditForm({
 }: DetailsEditFormProps) {
   const [fullName, setFullName] = useState(user.full_name);
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState(
-    user.role as "admin" | "teacher" | "student"
-  );
+  const [role, setRole] = useState(user.role);
   const [passport, setPassport] = useState<string | null>(
     user.passport || null
   );
@@ -38,7 +67,6 @@ function DetailsEditForm({
       if (passport) updates.passport = passport;
 
       const updated = await usersAPI.update(user.id, updates, token);
-
       onSave(updated, classId);
     } catch (err) {
       console.error("Failed saving details:", err);
@@ -130,37 +158,41 @@ function DetailsEditForm({
     </div>
   );
 }
+
 export default function ManageUsersPage() {
   const [users, setUsers] = useState<User[]>([]);
-  const [classes, setClasses] = useState<Class[]>([]);
+  const [classes, setClasses] = useState<ApiClass[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
   const [showModal, setShowModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editingUserId, setEditingUserId] = useState<number | null>(null);
   const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [viewingUser, setViewingUser] = useState<User | null>(null);
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
   const [detailsEditMode, setDetailsEditMode] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [token, setToken] = useState<string>("");
   const [backendHealth, setBackendHealth] = useState<string | null>(null);
+
   const API_BASE_URL = (
     process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000"
   ).replace(/\/$/, "");
 
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<UserFormData>({
     full_name: "",
     email: "",
     password: "",
-    role: "student" as "admin" | "teacher" | "student",
-    class_id: "" as string,
+    role: "student",
+    class_id: "",
     passport: "",
   });
 
-  const [editForm, setEditForm] = useState({
+  const [editForm, setEditForm] = useState<EditUserFormData>({
     full_name: "",
     password: "",
-    role: "student" as "admin" | "teacher" | "student",
+    role: "student",
+    class_id: "",
     passport: "",
   });
 
@@ -185,7 +217,7 @@ export default function ManageUsersPage() {
     }
   }, []);
 
-  // Fetch users callback
+  // Fetch users
   const fetchUsers = useCallback(async () => {
     if (!token) return;
     try {
@@ -193,7 +225,7 @@ export default function ManageUsersPage() {
       const response = await usersAPI.list(token);
       setUsers(response);
       setErrorMsg("");
-      setBackendHealth(null); // Clear any previous errors
+      setBackendHealth(null);
     } catch (err) {
       console.error("Failed to fetch users:", err);
       setErrorMsg("Failed to load users");
@@ -203,7 +235,7 @@ export default function ManageUsersPage() {
     }
   }, [token]);
 
-  // Fetch users on mount or when token changes
+  // Fetch data on mount
   useEffect(() => {
     if (token) {
       fetchUsers();
@@ -213,60 +245,32 @@ export default function ManageUsersPage() {
 
   const handleAddUser = async () => {
     if (!form.full_name || !form.email || !form.password) {
-      setErrorMsg("Please fill in all fields");
-      return;
-    }
-
-    // Validate: students must be assigned to a class
-    if (form.role === "student" && !form.class_id) {
-      setErrorMsg("Students must be assigned to a class");
+      setErrorMsg("Please fill in all required fields");
       return;
     }
 
     try {
       setIsSubmitting(true);
-
-      // Build payload
-      const payload: {
-        full_name: string;
-        email: string;
-        password: string;
-        role: "student" | "teacher" | "admin";
-        student_class?: string;
-      } = {
+      const payload = {
         full_name: form.full_name.trim(),
         email: form.email.trim(),
         password: form.password,
-        role: form.role.toLowerCase() as "student" | "teacher" | "admin",
+        role: form.role,
+        ...(form.passport && { passport: form.passport }),
       };
-
-      // Only send student_class if role is student
-      if (payload.role === "student" && form.class_id) {
-        const selectedClass = classes.find(
-          (c) => c.id === parseInt(form.class_id)
-        );
-        if (selectedClass) {
-          payload.student_class = selectedClass.name;
-        }
-      }
-      // include passport if provided
-      if ((form as any).passport) {
-        (payload as any).passport = (form as any).passport;
-      }
 
       const newUser = await usersAPI.create(payload, token);
 
       // Assign to class if student
-      if (payload.role === "student" && form.class_id) {
+      if (form.role === "student" && form.class_id) {
         try {
           await classesAPI.assignStudentToClass(
-            parseInt(form.class_id),
+            Number(form.class_id),
             newUser.id,
             token
           );
         } catch (err) {
-          console.error("Failed to assign student to class:", err);
-          setErrorMsg(err instanceof Error ? err.message : "Failed to assign student to class");
+          console.error("Failed to assign to class:", err);
         }
       }
 
@@ -277,6 +281,7 @@ export default function ManageUsersPage() {
         password: "",
         role: "student",
         class_id: "",
+        passport: "",
       });
       setShowModal(false);
       setErrorMsg("");
@@ -294,36 +299,44 @@ export default function ManageUsersPage() {
       full_name: user.full_name,
       password: "",
       role: user.role,
+      passport: user.passport || "",
+      class_id: user.class_id || "",
     });
     setShowEditModal(true);
   };
 
   const handleSaveEdit = async () => {
-    if (!editForm.full_name) {
-      setErrorMsg("Please enter a full name");
+    if (!editingUserId || !editForm.full_name) {
+      setErrorMsg("Please fill in all required fields");
       return;
     }
 
     try {
       setIsSubmitting(true);
-      const updates: {
-        full_name?: string;
-        password?: string;
-        role?: string;
-        passport?: string;
-      } = {
+      const updates: any = {
         full_name: editForm.full_name,
         role: editForm.role,
       };
-      if (editForm.password) {
-        updates.password = editForm.password;
-      }
-      if ((editForm as any).passport) {
-        updates.passport = (editForm as any).passport;
+
+      if (editForm.password) updates.password = editForm.password;
+      if (editForm.passport) updates.passport = editForm.passport;
+
+      const updatedUser = await usersAPI.update(editingUserId, updates, token);
+
+      // Update class assignment if needed
+      if (editForm.role === "student" && editForm.class_id) {
+        try {
+          await classesAPI.assignStudentToClass(
+            Number(editForm.class_id),
+            editingUserId,
+            token
+          );
+        } catch (err) {
+          console.error("Failed to update class assignment:", err);
+        }
       }
 
-      const updated = await usersAPI.update(editingUserId!, updates, token);
-      setUsers(users.map((u) => (u.id === editingUserId ? updated : u)));
+      setUsers(users.map((u) => (u.id === editingUserId ? updatedUser : u)));
       setShowEditModal(false);
       setEditingUserId(null);
       setErrorMsg("");
@@ -333,6 +346,10 @@ export default function ManageUsersPage() {
     } finally {
       setIsSubmitting(false);
     }
+  };
+
+  const handleViewDetails = (user: User) => {
+    setViewingUser(user);
   };
 
   const handleDeleteUser = async (userId: number, userName: string) => {
@@ -365,7 +382,6 @@ export default function ManageUsersPage() {
         </button>
       </div>
 
-      <div className="mb-2 text-sm text-gray-500">{backendHealth}</div>
       {errorMsg && (
         <div className="mb-4 p-4 bg-red-50 text-red-700 rounded border border-red-200">
           <div className="font-medium">{errorMsg}</div>
@@ -373,144 +389,307 @@ export default function ManageUsersPage() {
         </div>
       )}
 
-      {/* User Table */}
-      <div className="bg-white shadow rounded p-4">
+      {/* Users Table */}
+      <div className="bg-white shadow rounded-lg overflow-hidden">
         {loading ? (
-          <p className="text-gray-500">Loading users...</p>
-        ) : users.length === 0 ? (
-          <p className="text-gray-500">No users added yet.</p>
+          <div className="flex justify-center items-center p-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          </div>
         ) : (
-          <table className="w-full border-collapse">
-            <thead>
-              <tr className="bg-gray-100">
-                <th className="border p-2">Name</th>
-                <th className="border p-2">Email</th>
-                <th className="border p-2">Role</th>
-                <th className="border p-2">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((u) => (
-                <tr key={u.id}>
-                  <td className="border p-2">{u.full_name}</td>
-                  <td className="border p-2">{u.email}</td>
-                  <td className="border p-2 capitalize">{u.role}</td>
-                  <td className="border p-2">
-                    <button
-                      onClick={() => {
-                        setSelectedUser(u);
-                        setShowDetailsModal(true);
-                        setDetailsEditMode(false);
-                      }}
-                      className="bg-gray-500 text-white px-3 py-1 rounded hover:bg-gray-600"
-                      disabled={isSubmitting}
-                    >
-                      Details
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <UsersTable
+            users={users}
+            onEdit={handleEditUser}
+            onDelete={(id) => {
+              const user = users.find((u) => u.id.toString() === id);
+              if (user) {
+                handleDeleteUser(user.id, user.full_name);
+              }
+            }}
+            onViewDetails={handleViewDetails}
+            loading={loading}
+          />
         )}
       </div>
 
       {/* Add User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-96">
-            <h2 className="text-xl font-bold mb-4">Add User</h2>
-
-            <input
-              type="text"
-              placeholder="Full Name"
-              className="border w-full p-2 mb-3 rounded"
-              value={form.full_name}
-              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
-            />
-
-            <input
-              type="email"
-              placeholder="Email"
-              className="border w-full p-2 mb-3 rounded"
-              value={form.email}
-              onChange={(e) => setForm({ ...form, email: e.target.value })}
-            />
-
-            <input
-              type="password"
-              placeholder="Password"
-              className="border w-full p-2 mb-3 rounded"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-            />
-
-            <div>
-              <label className="block mb-1 font-semibold">Passport Photo</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = () =>
-                    setForm({ ...form, passport: reader.result as string });
-                  reader.readAsDataURL(file);
-                }}
-              />
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+              <h2 className="text-2xl font-bold text-white">Add New User</h2>
+              <p className="text-blue-100 text-sm mt-1">
+                Fill in the user details below
+              </p>
             </div>
 
-            <select
-              className="border w-full p-2 mb-3 rounded"
-              value={form.role}
-              onChange={(e) =>
-                setForm({
-                  ...form,
-                  role: e.target.value as "admin" | "teacher" | "student",
-                })
-              }
-            >
-              <option value="student">Student</option>
-              <option value="teacher">Teacher</option>
-              <option value="admin">Admin</option>
-            </select>
+            <div className="p-6 space-y-4">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  placeholder="John Doe"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  value={form.full_name}
+                  onChange={(e) =>
+                    setForm({ ...form, full_name: e.target.value })
+                  }
+                />
+              </div>
 
-            {form.role === "student" && (
-              <select
-                className="border w-full p-2 mb-3 rounded"
-                value={form.class_id}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    class_id: e.target.value,
-                  })
-                }
-              >
-                <option value="">-- Select Class (Optional) --</option>
-                {classes.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.name} ({c.level})
-                  </option>
-                ))}
-              </select>
-            )}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  placeholder="user@example.com"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  value={form.email}
+                  onChange={(e) => setForm({ ...form, email: e.target.value })}
+                />
+              </div>
 
-            <div className="flex justify-end gap-2">
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">
+                  Password
+                </label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+                  value={form.password}
+                  onChange={(e) =>
+                    setForm({ ...form, password: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Role
+                </label>
+                <select
+                  className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 appearance-none"
+                  value={form.role}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      role: e.target.value as "admin" | "teacher" | "student",
+                    })
+                  }
+                >
+                  <option value="student">Student</option>
+                  <option value="teacher">Teacher</option>
+                  <option value="admin">Admin</option>
+                </select>
+              </div>
+
+              {form.role === "student" && (
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-700">
+                    Class (Optional)
+                  </label>
+                  <select
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all duration-200 appearance-none"
+                    value={form.class_id}
+                    onChange={(e) =>
+                      setForm({
+                        ...form,
+                        class_id: e.target.value,
+                      })
+                    }
+                  >
+                    <option value="">Select a class (optional)</option>
+                    {classes.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name} ({c.level})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Profile Photo
+                </label>
+                <div className="flex items-center justify-center w-full">
+                  <label className="flex flex-col items-center justify-center w-full h-32 border-2 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-colors">
+                    <div className="flex flex-col items-center justify-center pt-5 pb-6">
+                      <svg
+                        className="w-8 h-8 mb-2 text-gray-400"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        xmlns="http://www.w3.org/2000/svg"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          strokeWidth="2"
+                          d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                        ></path>
+                      </svg>
+                      <p className="text-sm text-gray-500">
+                        <span className="font-semibold text-blue-600 hover:text-blue-500">
+                          Click to upload
+                        </span>{" "}
+                        or drag and drop
+                      </p>
+                      <p className="text-xs text-gray-400">
+                        PNG, JPG, JPEG (Max 5MB)
+                      </p>
+                    </div>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                          setForm({
+                            ...form,
+                            passport: reader.result as string,
+                          });
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </label>
+                </div>
+                {form.passport && (
+                  <div className="mt-2 text-sm text-green-600">
+                    ✓ Photo selected
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3 border-t border-gray-200 rounded-b-xl">
               <button
-                className="px-4 py-2 bg-gray-300 rounded"
+                className="px-5 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
                 onClick={() => setShowModal(false)}
                 disabled={isSubmitting}
+                type="button"
               >
                 Cancel
               </button>
-
               <button
-                className="px-4 py-2 bg-blue-600 text-white rounded disabled:bg-blue-400"
+                className="px-5 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-70 transition-colors flex items-center"
                 onClick={handleAddUser}
                 disabled={isSubmitting}
+                type="button"
               >
-                {isSubmitting ? "Adding..." : "Add"}
+                {isSubmitting ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Adding...
+                  </>
+                ) : (
+                  "Add User"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* View User Details Modal */}
+      {viewingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-y-auto">
+            <h2 className="text-xl font-bold mb-4">User Details</h2>
+
+            <div className="space-y-4">
+              <div className="flex justify-center mb-4">
+                {viewingUser.passport ? (
+                  <div className="h-24 w-24 rounded-full overflow-hidden border-2 border-gray-200">
+                    <img
+                      src={viewingUser.passport}
+                      alt={`${viewingUser.full_name}'s passport`}
+                      className="h-full w-full object-cover"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.onerror = null;
+                        target.src = "/default-avatar.png";
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div className="h-24 w-24 rounded-full bg-gray-100 flex items-center justify-center">
+                    <span className="text-2xl text-gray-400">
+                      {viewingUser.full_name?.charAt(0).toUpperCase() || "U"}
+                    </span>
+                  </div>
+                )}
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold">
+                  {viewingUser.full_name}
+                </h3>
+                <p className="text-gray-600">{viewingUser.email}</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-sm text-gray-500">Role</p>
+                  <p className="font-medium capitalize">{viewingUser.role}</p>
+                </div>
+                {viewingUser.reg_number && (
+                  <div>
+                    <p className="text-sm text-gray-500">Registration Number</p>
+                    <p className="font-medium">{viewingUser.reg_number}</p>
+                  </div>
+                )}
+                {viewingUser.class_id && (
+                  <div>
+                    <p className="text-sm text-gray-500">Class</p>
+                    <p className="font-medium">
+                      {classes.find((c) => c.id === viewingUser.class_id)
+                        ?.name || "N/A"}
+                    </p>
+                  </div>
+                )}
+                <div>
+                  <p className="text-sm text-gray-500">Account Created</p>
+                  <p className="font-medium">
+                    {viewingUser.created_at
+                      ? new Date(viewingUser.created_at).toLocaleDateString()
+                      : "N/A"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setViewingUser(null)}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+              >
+                Close
               </button>
             </div>
           </div>
@@ -519,8 +698,8 @@ export default function ManageUsersPage() {
 
       {/* Edit User Modal */}
       {showEditModal && editingUserId && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-96">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96">
             <h2 className="text-xl font-bold mb-4">Edit User</h2>
 
             <input
@@ -535,7 +714,7 @@ export default function ManageUsersPage() {
 
             <input
               type="password"
-              placeholder="Password (leave empty to keep current)"
+              placeholder="New Password (leave blank to keep current)"
               className="border w-full p-2 mb-3 rounded"
               value={editForm.password}
               onChange={(e) =>
@@ -543,7 +722,7 @@ export default function ManageUsersPage() {
               }
             />
 
-            <div>
+            <div className="mb-3">
               <label className="block mb-1 font-semibold">Passport Photo</label>
               <input
                 type="file"
@@ -577,6 +756,26 @@ export default function ManageUsersPage() {
               <option value="admin">Admin</option>
             </select>
 
+            {editForm.role === "student" && (
+              <select
+                className="border w-full p-2 mb-3 rounded"
+                value={editForm.class_id}
+                onChange={(e) =>
+                  setEditForm({
+                    ...editForm,
+                    class_id: e.target.value,
+                  })
+                }
+              >
+                <option value="">-- Select Class --</option>
+                {classes.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.name} ({c.level})
+                  </option>
+                ))}
+              </select>
+            )}
+
             <div className="flex justify-end gap-2">
               <button
                 className="px-4 py-2 bg-gray-300 rounded"
@@ -594,17 +793,17 @@ export default function ManageUsersPage() {
                 onClick={handleSaveEdit}
                 disabled={isSubmitting}
               >
-                {isSubmitting ? "Saving..." : "Save"}
+                {isSubmitting ? "Saving..." : "Save Changes"}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Details Modal (View + Edit + Delete) */}
+      {/* User Details Modal */}
       {showDetailsModal && selectedUser && (
-        <div className="fixed inset-0 bg-white/60 backdrop-blur-sm flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded w-96 max-h-[90vh] overflow-auto">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg w-96 max-h-[90vh] overflow-auto">
             <div className="flex items-start justify-between">
               <h2 className="text-xl font-bold mb-2">User Details</h2>
               <div className="space-x-2">
@@ -661,11 +860,14 @@ export default function ManageUsersPage() {
                 </div>
                 <div>
                   <span className="font-semibold">Registration #: </span>
-                  {selectedUser.registration_number || "(none)"}
+                  {selectedUser.reg_number || "(none)"}
                 </div>
                 <div>
                   <span className="font-semibold">Class: </span>
-                  {selectedUser.student_class || "(none)"}
+                  {selectedUser.class_id
+                    ? classes.find((c) => c.id === selectedUser.class_id)
+                        ?.name || "(none)"
+                    : "(none)"}
                 </div>
                 <div className="pt-3">
                   <button
@@ -702,13 +904,14 @@ export default function ManageUsersPage() {
                 token={token}
                 onCancel={() => setDetailsEditMode(false)}
                 onSave={async (updatedUser: User, classId?: number | null) => {
-                  // update local list
+                  // Update local list
                   setUsers(
                     users.map((u) =>
                       u.id === updatedUser.id ? updatedUser : u
                     )
                   );
-                  // assign to class if provided
+
+                  // Assign to class if provided
                   if (classId && updatedUser.role === "student") {
                     try {
                       await classesAPI.assignStudentToClass(
@@ -723,6 +926,7 @@ export default function ManageUsersPage() {
                       );
                     }
                   }
+
                   setSelectedUser(updatedUser);
                   setDetailsEditMode(false);
                 }}
