@@ -128,93 +128,159 @@ export default function StudentDashboardPage() {
 
   return (
     <div className="space-y-8">
-      {/* Student Profile */}
-      <div className="flex items-center gap-6 bg-white border border-gray-200 rounded-xl shadow p-6">
-        <div>
-          {student.passport ? (
-            <img
-              src={student.passport}
-              alt="passport"
-              className="w-20 h-20 rounded-full object-cover border"
-            />
-          ) : (
-            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center text-white font-semibold text-2xl">
-              {student.full_name.charAt(0).toUpperCase()}
+      {/* Welcome Section */}
+      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 rounded-2xl shadow-lg overflow-hidden">
+        <div className="px-8 py-10 text-white">
+          <div className="flex flex-col md:flex-row md:items-center justify-between">
+            <div className="flex items-center space-x-6">
+              {student.passport ? (
+                <img
+                  src={student.passport}
+                  alt="passport"
+                  className="w-20 h-20 rounded-full object-cover border-4 border-white/20"
+                />
+              ) : (
+                <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center text-white font-bold text-3xl">
+                  {student.full_name.charAt(0).toUpperCase()}
+                </div>
+              )}
+              <div>
+                <h1 className="text-2xl md:text-3xl font-bold">
+                  Welcome back, {student.full_name.split(" ")[0]}!
+                </h1>
+                <p className="text-blue-100 mt-1">
+                  Ready for your next challenge?
+                </p>
+              </div>
             </div>
-          )}
-        </div>
-
-        <div className="space-y-1">
-          <h2 className="text-2xl font-bold text-gray-900">
-            {student.full_name}
-          </h2>
-          <p className="text-gray-900 font-extrabold text-lg">
-            Reg#: {student.registration_number || "(not set)"}
-          </p>
-          <p className="text-gray-700">Email: {student.email}</p>
-          <p className="text-gray-700">
-            Role: <span className="capitalize font-medium">{student.role}</span>
-          </p>
+            <div className="mt-6 md:mt-0 bg-white/10 rounded-lg p-4 backdrop-blur-sm">
+              <p className="text-sm text-blue-100">Registration Number</p>
+              <p className="text-lg font-semibold text-white">
+                {student.registration_number || "Not assigned"}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Exams Assigned */}
-      <div className="bg-white border border-gray-200 rounded-xl shadow p-6 space-y-4">
-        <h3 className="text-xl font-semibold text-gray-800">Available Exams</h3>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700">{error}</p>
-          </div>
-        )}
-
-        {loading ? (
-          <p className="text-gray-500">Loading exams...</p>
-        ) : exams.length === 0 ? (
-          showDebug ? (
-            <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-              <p className="text-yellow-800 font-medium">No exams available.</p>
-              <p className="text-sm text-yellow-700 mt-2">Debug info:</p>
-              <ul className="text-sm text-yellow-700 list-disc list-inside mt-1">
-                <li>Student class id: {student.class_id ?? "(none)"}</li>
-                <li>Exams shown: {exams.length}</li>
-                <li>
-                  Make sure exams are published and assigned to your class or
-                  subjects.
-                </li>
-              </ul>
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Available Exams
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                {exams.length}
+              </p>
             </div>
-          ) : (
-            <p className="text-gray-500">No exams available yet.</p>
-          )
-        ) : (
-          <div className="grid gap-4">
-            {exams.map((exam) => (
-              <div
-                key={exam.id}
-                className="flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition"
+            <div className="p-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
               >
-                <div className="flex-1">
-                  <h4 className="font-semibold text-gray-900">{exam.title}</h4>
-                  {exam.description && (
-                    <p className="text-sm text-gray-600 mt-1">
-                      {exam.description}
-                    </p>
-                  )}
-                  <p className="text-sm text-gray-500 mt-2">
-                    ⏱️ {exam.duration_minutes} minutes
-                  </p>
-                </div>
-                <button
-                  onClick={() => router.push(`/exam/take/${exam.id}`)}
-                  className="ml-4 px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 font-medium transition whitespace-nowrap"
-                >
-                  Take Exam
-                </button>
-              </div>
-            ))}
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+                />
+              </svg>
+            </div>
           </div>
-        )}
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Completed
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                0
+              </p>
+            </div>
+            <div className="p-3 rounded-full bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                Average Score
+              </p>
+              <p className="text-2xl font-bold text-gray-900 dark:text-white mt-1">
+                -
+              </p>
+            </div>
+            <div className="p-3 rounded-full bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-6 w-6"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Actions */}
+      <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+        <div className="flex flex-col items-center justify-center py-8">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            Ready to take an exam?
+          </h3>
+          <p className="text-gray-600 dark:text-gray-300 mb-6 text-center">
+            View all available exams and start your test when you're ready.
+          </p>
+          <button
+            onClick={() => router.push("/exam")}
+            className="px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg transition-colors flex items-center space-x-2"
+          >
+            <span>Go to Exams</span>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fillRule="evenodd"
+                d="M10.293 5.293a1 1 0 011.414 0l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414-1.414L12.586 11H5a1 1 0 110-2h7.586l-2.293-2.293a1 1 0 010-1.414z"
+                clipRule="evenodd"
+              />
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   );

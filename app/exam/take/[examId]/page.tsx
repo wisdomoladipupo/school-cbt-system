@@ -2,8 +2,7 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useRouter } from "next/navigation";
-import DashboardLayout from "../../../dashboard/layout";
-import { getStoredToken } from "../../../../lib/api";
+import { getStoredToken, getStoredUser } from "../../../../lib/api";
 import { examsAPI, questionsAPI, resultsAPI } from "../../../../lib/api/api";
 import Timer, { TimerHandle } from "../../../../components/cbt/Timer";
 import QuestionCard from "../../../../components/cbt/QuestionCard";
@@ -49,7 +48,7 @@ export default function TakeExamPage() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState<(string | number | null)[]>([]);
   const [startedAt, setStartedAt] = useState<number | null>(null);
-  const [submitted, setSubmitted] = useState(false);
+  const [_, setSubmitted] = useState(false);
 
   const timerRef = useRef<TimerHandle>(null!);
 
@@ -71,12 +70,14 @@ export default function TakeExamPage() {
           id: exam.id,
           title: exam.title,
           duration: exam.duration_minutes,
-          questions: questions.map((q) => ({
-            id: q.id,
-            question: q.text,
-            options: q.options,
-            correctAnswer: undefined,
-          })),
+          questions: questions.map(
+            (q: { id: number; text: string; options: string[] }) => ({
+              id: q.id,
+              question: q.text,
+              options: q.options,
+              correctAnswer: undefined,
+            })
+          ),
         };
 
         setExam(mapped);
@@ -107,21 +108,6 @@ export default function TakeExamPage() {
     setCurrentIndex((i) => Math.max(i - 1, 0));
   };
 
-  // Compute score
-  const computeScore = () => {
-    if (!exam) return { score: 0, max: 0 };
-    let score = 0;
-    const max = exam.questions.length;
-
-    exam.questions.forEach((q, i) => {
-      if (q.correctAnswer != null && answers[i] === q.correctAnswer) {
-        score += 1;
-      }
-    });
-
-    return { score, max };
-  };
-
   // Submit exam
   const handleSubmit = async () => {
     if (!exam) return;
@@ -140,7 +126,7 @@ export default function TakeExamPage() {
         })),
       };
 
-      const result = await resultsAPI.submit(payload, token);
+      await resultsAPI.submit(payload, token);
       setSubmitted(true);
       // Redirect to dashboard after 2 seconds
       setTimeout(() => {
@@ -170,82 +156,171 @@ export default function TakeExamPage() {
 
   if (!exam) {
     return (
-      <DashboardLayout>
-        <div className="p-6">Loading exam...</div>
-      </DashboardLayout>
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-semibold text-gray-700">
+            Loading exam...
+          </div>
+          <div className="mt-2 text-gray-500">
+            Please wait while we prepare your exam.
+          </div>
+        </div>
+      </div>
     );
   }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6 p-6">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-semibold">{exam.title}</h1>
-          <div className="flex items-center gap-4">
-            <Timer
-              ref={timerRef}
-              minutes={Number(exam.duration) || 30}
-              onExpire={handleSubmit}
-            />
+    <div className="min-h-screen bg-gray-50">
+      {/* Enhanced Header */}
+      <header className="bg-white shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 py-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center space-x-4">
+              {/* Student Profile Picture */}
+              {getStoredUser()?.passport ? (
+                <div className="flex-shrink-0 h-16 w-16 rounded-full overflow-hidden border-2 border-gray-200">
+                  <img
+                    src={getStoredUser()?.passport}
+                    alt="Student"
+                    className="h-full w-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src =
+                        "https://ui-avatars.com/api/?name=" +
+                        encodeURIComponent(
+                          getStoredUser()?.full_name || "Student"
+                        ) +
+                        "&background=4f46e5&color=fff&size=128";
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex-shrink-0 h-16 w-16 rounded-full bg-indigo-100 flex items-center justify-center">
+                  <span className="text-2xl font-bold text-indigo-600">
+                    {getStoredUser()?.full_name?.[0]?.toUpperCase() || "S"}
+                  </span>
+                </div>
+              )}
+
+              <div>
+                <h1 className="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
+                  {exam.title}
+                </h1>
+                <div className="mt-1 flex flex-col sm:flex-row sm:flex-wrap sm:mt-0 sm:space-x-6">
+                  <div className="mt-1 flex items-center text-sm text-gray-700">
+                    <span className="font-semibold">
+                      {getStoredUser()?.full_name || "Student"}
+                    </span>
+                    {getStoredUser()?.registration_number && (
+                      <span className="ml-2 px-2 py-0.5 bg-gray-100 text-gray-700 rounded-md text-xs font-medium">
+                        {getStoredUser()?.registration_number}
+                      </span>
+                    )}
+                  </div>
+                  <div className="mt-1 flex items-center text-sm text-gray-500">
+                    <span className="font-medium">Email:</span>
+                    <span className="ml-1">
+                      {getStoredUser()?.email || "N/A"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="mt-4 flex md:mt-0 md:ml-4">
+              <div className="px-4 py-2 bg-white text-gray-900 rounded-md text-lg font-semibold border border-gray-200 shadow-sm">
+                <Timer
+                  ref={timerRef}
+                  minutes={Number(exam.duration) || 30}
+                  onExpire={handleSubmit}
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 flex items-center justify-between">
+            <p className="text-sm text-gray-700">
+              <span className="font-medium">Progress:</span>{" "}
+              <span className="font-semibold">
+                {currentIndex + 1} of {exam.questions.length} questions
+              </span>
+            </p>
+            <div className="text-sm text-gray-500">
+              {exam.duration} minute time limit
+            </div>
           </div>
         </div>
+      </header>
 
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <div className="md:col-span-3">
-            <QuestionCard
-              question={exam.questions[currentIndex]}
-              index={currentIndex}
-              total={exam.questions.length}
-              selected={answers[currentIndex]}
-              onAnswer={(value: string | number) =>
-                handleAnswer(currentIndex, value)
-              }
-            />
+      <main className="max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
+        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+          {/* Main content area */}
+          <div className="p-6">
+            {/* Current question */}
+            <div className="mb-8">
+              <QuestionCard
+                question={exam.questions[currentIndex]}
+                index={currentIndex}
+                total={exam.questions.length}
+                selected={answers[currentIndex]}
+                onAnswer={(value: string | number) =>
+                  handleAnswer(currentIndex, value)
+                }
+              />
+            </div>
 
-            <div className="flex justify-between mt-4">
+            {/* Pagination controls */}
+            <div className="flex items-center justify-between border-t border-gray-200 pt-6">
               <button
                 onClick={handlePrev}
-                className="px-4 py-2 bg-gray-200 rounded"
+                disabled={currentIndex === 0}
+                className={`px-4 py-2 rounded-md border ${
+                  currentIndex === 0
+                    ? "bg-gray-100 text-gray-400 cursor-not-allowed"
+                    : "bg-white text-gray-700 hover:bg-gray-50 border-gray-300"
+                }`}
               >
                 Previous
               </button>
+
+              <div className="flex-1 flex justify-center">
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {exam.questions.map((_, index) => (
+                    <button
+                      key={index}
+                      onClick={() => setCurrentIndex(index)}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
+                        currentIndex === index
+                          ? "bg-blue-600 text-white"
+                          : answers[index] !== null
+                          ? "bg-green-100 text-green-700 hover:bg-green-200"
+                          : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                      }`}
+                      aria-label={`Go to question ${index + 1}`}
+                    >
+                      {index + 1}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               {currentIndex < exam.questions.length - 1 ? (
                 <button
                   onClick={handleNext}
-                  className="px-4 py-2 bg-blue-600 text-white rounded"
+                  className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Next
+                  Next Question
                 </button>
               ) : (
                 <button
                   onClick={handleSubmit}
-                  className="px-4 py-2 bg-green-600 text-white rounded"
+                  className="px-6 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors"
                 >
                   Submit Exam
                 </button>
               )}
             </div>
           </div>
-
-          <aside className="md:col-span-1 border rounded p-4 bg-white">
-            <h3 className="font-semibold mb-2">Question List</h3>
-            <ul className="space-y-2 max-h-[60vh] overflow-auto">
-              {exam.questions.map((_, i) => (
-                <li key={i}>
-                  <button
-                    onClick={() => setCurrentIndex(i)}
-                    className={`w-full text-left p-2 rounded ${
-                      i === currentIndex ? "bg-indigo-100" : "hover:bg-gray-50"
-                    }`}
-                  >
-                    Question {i + 1}
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </aside>
         </div>
-      </div>
-    </DashboardLayout>
+      </main>
+    </div>
   );
 }

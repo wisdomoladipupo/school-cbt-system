@@ -106,7 +106,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
           {userRole === "student" && (
             <Link
-              href="/exam/take"
+              href="/exam"
               className="block px-4 py-2 rounded hover:bg-indigo-800 transition"
             >
               Take Exam
