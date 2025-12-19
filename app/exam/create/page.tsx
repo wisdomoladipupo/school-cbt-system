@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { Editor } from "@tinymce/tinymce-react";
-import { getStoredToken } from "@/lib/api";
-import { questionsAPI, classesAPI, examsAPI } from "@/lib/api/api";
+import { getStoredToken, getStoredUser } from "@/lib/api/token";
+import { questionsAPI, classesAPI, examsAPI, usersAPI } from "@/lib/api/api";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
@@ -17,6 +18,7 @@ interface Question {
 }
 
 export default function CreateExamBuilder() {
+  const router = useRouter();
   const token = getStoredToken();
 
   const [title, setTitle] = useState("");
@@ -29,16 +31,33 @@ export default function CreateExamBuilder() {
   const [questions, setQuestions] = useState<Question[]>([
     { question: "", options: ["", "", "", ""], correctAnswer: null },
   ]);
-  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>({});
+  const [uploadingImage, setUploadingImage] = useState<Record<number, boolean>>(
+    {}
+  );
   const [saving, setSaving] = useState(false);
   const [importingFile, setImportingFile] = useState(false);
   const [createdExamId, setCreatedExamId] = useState<number | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Load classes
+  // Check user role and load classes
   useEffect(() => {
-    const fetchClasses = async () => {
+    const checkUserRole = async () => {
+      const user = getStoredUser();
+
+      // Redirect to login if not authenticated
+      if (!user || !token) {
+        router.push("/auth/login");
+        return;
+      }
+
+      // Allow only teachers and admins to create exams
+      if (user.role !== "teacher" && user.role !== "admin") {
+        router.push("/dashboard/student");
+        return;
+      }
+
+      // Load classes for teachers and admins
       try {
         const c = await classesAPI.listClasses();
         setClasses(c);
@@ -46,8 +65,9 @@ export default function CreateExamBuilder() {
         console.error("Failed to load classes:", err);
       }
     };
-    fetchClasses();
-  }, []);
+
+    checkUserRole();
+  }, [router, token]);
 
   // Load subjects for selected class
   useEffect(() => {
@@ -69,25 +89,36 @@ export default function CreateExamBuilder() {
 
   // -------------------- Question Handlers --------------------
   const addQuestion = () =>
-    setQuestions([...questions, { question: "", options: ["", "", "", ""], correctAnswer: null }]);
+    setQuestions([
+      ...questions,
+      { question: "", options: ["", "", "", ""], correctAnswer: null },
+    ]);
 
   const removeQuestion = async (index: number) => {
     if (questions.length === 1) return;
     const q = questions[index];
-    
+
     // If question has an id, it exists in DB and needs to be deleted
     if (q.id && token) {
-      if (!window.confirm("Delete this question permanently? This cannot be undone.")) {
+      if (
+        !window.confirm(
+          "Delete this question permanently? This cannot be undone."
+        )
+      ) {
         return;
       }
       try {
         await questionsAPI.delete(q.id, token);
       } catch (err) {
-        alert(`Failed to delete question: ${err instanceof Error ? err.message : "Unknown error"}`);
+        alert(
+          `Failed to delete question: ${
+            err instanceof Error ? err.message : "Unknown error"
+          }`
+        );
         return;
       }
     }
-    
+
     setQuestions(questions.filter((_, i) => i !== index));
   };
 
@@ -118,7 +149,11 @@ export default function CreateExamBuilder() {
       updated[index].imageUrl = result.image_url;
       setQuestions(updated);
     } catch (error) {
-      alert(`Upload failed: ${error instanceof Error ? error.message : "Unknown error"}`);
+      alert(
+        `Upload failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setUploadingImage({ ...uploadingImage, [index]: false });
     }
@@ -134,35 +169,51 @@ export default function CreateExamBuilder() {
   const saveQuestion = async (index: number) => {
     if (!token) return alert("Please login first");
     const q = questions[index];
-    if (!createdExamId) return alert("Please save or create the exam first so questions can be persisted.");
+    if (!createdExamId)
+      return alert(
+        "Please save or create the exam first so questions can be persisted."
+      );
 
     try {
       if (q.id) {
         // update
-        const updated = await questionsAPI.update(q.id, {
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer,
-          marks: 1,
-          image_url: q.imageUrl,
-        }, token);
+        const updated = await questionsAPI.update(
+          q.id,
+          {
+            text: q.question,
+            options: q.options,
+            correct_answer: q.correctAnswer,
+            marks: 1,
+            image_url: q.imageUrl,
+          },
+          token
+        );
         // update local
         setQuestions((prev) => {
           const out = [...prev];
-          out[index] = { ...out[index], question: updated.text, options: updated.options, correctAnswer: updated.correct_answer, imageUrl: updated.image_url };
+          out[index] = {
+            ...out[index],
+            question: updated.text,
+            options: updated.options,
+            correctAnswer: updated.correct_answer,
+            imageUrl: updated.image_url,
+          };
           return out;
         });
         alert("Question updated");
       } else {
         // create
-        const created = await questionsAPI.create({
-          exam_id: createdExamId,
-          text: q.question,
-          options: q.options,
-          correct_answer: q.correctAnswer as number,
-          marks: 1,
-          image_url: q.imageUrl,
-        } as any, token);
+        const created = await questionsAPI.create(
+          {
+            exam_id: createdExamId,
+            text: q.question,
+            options: q.options,
+            correct_answer: q.correctAnswer as number,
+            marks: 1,
+            image_url: q.imageUrl,
+          } as any,
+          token
+        );
         setQuestions((prev) => {
           const out = [...prev];
           out[index].id = created.id;
@@ -199,7 +250,7 @@ export default function CreateExamBuilder() {
     if (!selectedSubject) return alert("Please select a subject");
 
     // Validate only non-empty questions
-    const nonEmptyQuestions = questions.filter(q => q.question.trim());
+    const nonEmptyQuestions = questions.filter((q) => q.question.trim());
     for (const q of nonEmptyQuestions) {
       if (q.correctAnswer === null)
         return alert("All questions must have a correct answer selected!");
@@ -238,7 +289,11 @@ export default function CreateExamBuilder() {
         setQuestions((prev) => {
           const updated = [...prev];
           // find matching question by text and options (best-effort) and set id
-          const idx = updated.findIndex((qq) => qq.question === q.question && JSON.stringify(qq.options) === JSON.stringify(q.options));
+          const idx = updated.findIndex(
+            (qq) =>
+              qq.question === q.question &&
+              JSON.stringify(qq.options) === JSON.stringify(q.options)
+          );
           if (idx >= 0) updated[idx].id = createdQ.id;
           return updated;
         });
@@ -257,7 +312,9 @@ export default function CreateExamBuilder() {
   const resetForm = () => {
     setTitle("");
     setDuration(30);
-    setQuestions([{ question: "", options: ["", "", "", ""], correctAnswer: null }]);
+    setQuestions([
+      { question: "", options: ["", "", "", ""], correctAnswer: null },
+    ]);
     setSelectedClass(null);
     setSelectedSubject(null);
     setCreatedExamId(null);
@@ -342,7 +399,9 @@ export default function CreateExamBuilder() {
             <select
               value={selectedClass ?? ""}
               onChange={(e) =>
-                setSelectedClass(e.target.value ? parseInt(e.target.value) : null)
+                setSelectedClass(
+                  e.target.value ? parseInt(e.target.value) : null
+                )
               }
               className="flex-1 p-2 border rounded text-black"
             >
@@ -356,7 +415,9 @@ export default function CreateExamBuilder() {
             <select
               value={selectedSubject ?? ""}
               onChange={(e) =>
-                setSelectedSubject(e.target.value ? parseInt(e.target.value) : null)
+                setSelectedSubject(
+                  e.target.value ? parseInt(e.target.value) : null
+                )
               }
               className="flex-1 p-2 border rounded text-black"
               disabled={!classSubjects.length}
@@ -379,9 +440,15 @@ export default function CreateExamBuilder() {
           ref={fileInputRef}
           accept=".doc,.docx"
           className="hidden"
-          onChange={(e) => e.target.files?.[0] && handleImportDocument(e.target.files[0])}
+          onChange={(e) =>
+            e.target.files?.[0] && handleImportDocument(e.target.files[0])
+          }
         />
-        <Button variant="secondary" onClick={handleImportClick} className="inline-flex">
+        <Button
+          variant="secondary"
+          onClick={handleImportClick}
+          className="inline-flex"
+        >
           {importingFile ? "Importing..." : "Import Exam Document"}
         </Button>
       </div>
@@ -435,7 +502,10 @@ export default function CreateExamBuilder() {
           <div className="space-y-3">
             <h3 className="font-semibold text-black">Options</h3>
             {q.options.map((opt, optIndex) => (
-              <div key={optIndex} className="flex text-black items-center gap-3">
+              <div
+                key={optIndex}
+                className="flex text-black items-center gap-3"
+              >
                 <input
                   type="radio"
                   name={`correct-${index}`}
@@ -446,7 +516,9 @@ export default function CreateExamBuilder() {
                 <Input
                   type="text"
                   value={opt}
-                  onChange={(e) => updateOption(index, optIndex, e.target.value)}
+                  onChange={(e) =>
+                    updateOption(index, optIndex, e.target.value)
+                  }
                   placeholder={`Option ${optIndex + 1}`}
                 />
               </div>

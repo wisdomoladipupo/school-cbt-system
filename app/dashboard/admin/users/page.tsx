@@ -261,18 +261,8 @@ export default function ManageUsersPage() {
 
       const newUser = await usersAPI.create(payload, token);
 
-      // Assign to class if student
-      if (form.role === "student" && form.class_id) {
-        try {
-          await classesAPI.assignStudentToClass(
-            Number(form.class_id),
-            newUser.id,
-            token
-          );
-        } catch (err) {
-          console.error("Failed to assign to class:", err);
-        }
-      }
+      // Note: Removed automatic class assignment to prevent unwanted exam creation
+      // Class assignment should be done separately through the class management interface
 
       setUsers([...users, newUser]);
       setForm({
@@ -413,16 +403,16 @@ export default function ManageUsersPage() {
 
       {/* Add User Modal */}
       {showModal && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-start justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md max-h-[90vh] my-8 flex flex-col">
+            <div className="bg-gradient-to-r from-blue-600 to-blue-700 p-6 sticky top-0 z-10">
               <h2 className="text-2xl font-bold text-white">Add New User</h2>
               <p className="text-blue-100 text-sm mt-1">
                 Fill in the user details below
               </p>
             </div>
 
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-4 overflow-y-auto flex-1">
               <div className="space-y-1">
                 <label className="block text-sm font-medium text-gray-700">
                   Full Name

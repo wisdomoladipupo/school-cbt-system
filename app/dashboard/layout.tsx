@@ -261,17 +261,36 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <h1 className="text-xl font-semibold text-gray-800">Dashboard</h1>
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
-                {userPassport ? (
-                  <img
-                    src={userPassport}
-                    alt="avatar"
-                    className="w-10 h-10 rounded-full object-cover border"
-                  />
-                ) : (
-                  <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center text-sm font-semibold text-gray-700">
-                    {userName.charAt(0).toUpperCase()}
+                <div className="relative">
+                  {userPassport ? (
+                    <img
+                      src={userPassport}
+                      alt="avatar"
+                      className="w-10 h-10 rounded-full object-cover border"
+                      onError={(e) => {
+                        // If image fails to load, fall back to initials
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = "none";
+                        const fallback =
+                          target.nextElementSibling as HTMLElement;
+                        if (fallback) fallback.style.display = "flex";
+                      }}
+                    />
+                  ) : null}
+                  <div
+                    className={`w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center text-sm font-semibold text-indigo-700 ${
+                      userPassport ? "hidden" : "flex"
+                    }`}
+                    style={{ display: userPassport ? "none" : "flex" }}
+                  >
+                    {userName
+                      .split(" ")
+                      .map((n) => n[0])
+                      .join("")
+                      .toUpperCase()
+                      .substring(0, 2)}
                   </div>
-                )}
+                </div>
                 <div className="text-sm text-gray-600">
                   <div>
                     Welcome, <span className="font-semibold">{userName}</span>

@@ -117,7 +117,7 @@ class ClassService:
     def assign_student_to_class(
         db: Session, student_id: int, class_id: int, created_by_id: int = None
     ) -> dict:
-        """Assign a student to a class and create exams for all class subjects"""
+        """Assign a student to a class and create student-subject relationships"""
         user = db.query(User).filter(User.id == student_id).first()
         if not user:
             raise ValueError("Student not found")
@@ -144,8 +144,8 @@ class ClassService:
             class_obj.students.append(user)
             db.commit()
 
-        # Create student-subject relationships and exams for each subject
-        created_exams = []
+        # Create student-subject relationships
+        created_relationships = 0
         for subject in class_obj.subjects:
             # Create student-subject relationship
             existing_ss = (
@@ -164,17 +164,9 @@ class ClassService:
                     class_id=class_id,
                 )
                 db.add(student_subject)
-                db.commit()
+                created_relationships += 1
 
-            # Create exam for this subject
-            exam = Exam(
-                title=f"{subject.name} - {class_obj.name}",
-                description=f"Exam for {subject.name} in class {class_obj.name}",
-                duration_minutes=60,
-                published=False,
-                created_by=created_by_id or student_id,
-                class_id=class_id,
-                subject_id=subject.id,
+        db.commit()
             )
             db.add(exam)
             db.commit()
